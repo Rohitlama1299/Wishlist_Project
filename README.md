@@ -156,6 +156,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-Rohit Lama - [Your Email or Contact Info]
+Rohit Lama - Rohitlama1299@gmail.com
 
 Project Link: [https://github.com/Rohitlama1299/Wishlist_Project](https://github.com/Rohitlama1299/Wishlist_Project)
