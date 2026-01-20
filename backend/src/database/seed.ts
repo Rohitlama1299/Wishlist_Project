@@ -8,18 +8,29 @@ import { Photo } from '../entities/photo.entity';
 import { Activity } from '../entities/activity.entity';
 import * as dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ path: process.env.ENV_FILE || '.env' });
 
-const dataSource = new DataSource({
-  type: 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  username: process.env.DB_USERNAME || 'postgres',
-  password: process.env.DB_PASSWORD || 'password',
-  database: process.env.DB_NAME || 'travel_wishlist',
-  entities: [User, Continent, Country, City, Destination, Photo, Activity],
-  synchronize: true,
-});
+// Support both DATABASE_URL and individual variables
+const dbConfig = process.env.DATABASE_URL
+  ? {
+      type: 'postgres' as const,
+      url: process.env.DATABASE_URL,
+      entities: [User, Continent, Country, City, Destination, Photo, Activity],
+      synchronize: true,
+      ssl: { rejectUnauthorized: false },
+    }
+  : {
+      type: 'postgres' as const,
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      username: process.env.DB_USERNAME || 'postgres',
+      password: process.env.DB_PASSWORD || 'password',
+      database: process.env.DB_NAME || 'travel_wishlist',
+      entities: [User, Continent, Country, City, Destination, Photo, Activity],
+      synchronize: true,
+    };
+
+const dataSource = new DataSource(dbConfig);
 
 const continentsData = [
   { name: 'Africa', code: 'AF' },
