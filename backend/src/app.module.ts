@@ -43,7 +43,9 @@ import {
             entities: [User, Continent, Country, City, Destination, Photo, Activity],
             synchronize: !isProduction,
             logging: !isProduction,
-            ssl: isProduction ? { rejectUnauthorized: false } : false,
+            ssl: {
+              rejectUnauthorized: false,
+            },
           };
         }
 
