@@ -25,14 +25,16 @@ import { Destination, DestinationStats } from '../../models';
   template: `
     <div class="dashboard-container">
       <header class="dashboard-header">
-        <div>
-          <h1>Welcome back, {{ authService.currentUser()?.firstName }}!</h1>
-          <p>Here's an overview of your travel wishlist</p>
+        <div class="welcome-section">
+          <div class="welcome-text">
+            <h1>Welcome back, {{ authService.currentUser()?.firstName }}!</h1>
+            <p>Ready for your next adventure? Here's your travel overview.</p>
+          </div>
+          <button mat-flat-button color="primary" routerLink="/explore" class="cta-button">
+            <mat-icon>add</mat-icon>
+            Add Destination
+          </button>
         </div>
-        <button mat-raised-button color="primary" routerLink="/explore">
-          <mat-icon>add</mat-icon>
-          Add Destination
-        </button>
       </header>
 
       @if (loading()) {
@@ -40,53 +42,57 @@ import { Destination, DestinationStats } from '../../models';
           <mat-spinner></mat-spinner>
         </div>
       } @else {
-        <div class="stats-grid">
+        <div class="stats-section">
           <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon total">
+            <div class="stat-content">
+              <div class="stat-icon-wrapper total">
                 <mat-icon>place</mat-icon>
               </div>
-              <div class="stat-info">
+              <div class="stat-details">
                 <span class="stat-value">{{ stats()?.totalDestinations || 0 }}</span>
                 <span class="stat-label">Total Destinations</span>
               </div>
-            </mat-card-content>
+            </div>
+            <div class="stat-decoration"></div>
           </mat-card>
 
           <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon visited">
+            <div class="stat-content">
+              <div class="stat-icon-wrapper visited">
                 <mat-icon>check_circle</mat-icon>
               </div>
-              <div class="stat-info">
+              <div class="stat-details">
                 <span class="stat-value">{{ stats()?.visitedCount || 0 }}</span>
                 <span class="stat-label">Places Visited</span>
               </div>
-            </mat-card-content>
+            </div>
+            <div class="stat-decoration visited"></div>
           </mat-card>
 
           <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon pending">
+            <div class="stat-content">
+              <div class="stat-icon-wrapper pending">
                 <mat-icon>schedule</mat-icon>
               </div>
-              <div class="stat-info">
+              <div class="stat-details">
                 <span class="stat-value">{{ stats()?.pendingCount || 0 }}</span>
                 <span class="stat-label">On Wishlist</span>
               </div>
-            </mat-card-content>
+            </div>
+            <div class="stat-decoration pending"></div>
           </mat-card>
 
           <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon continents">
+            <div class="stat-content">
+              <div class="stat-icon-wrapper continents">
                 <mat-icon>public</mat-icon>
               </div>
-              <div class="stat-info">
+              <div class="stat-details">
                 <span class="stat-value">{{ getContinentCount() }}</span>
-                <span class="stat-label">Continents</span>
+                <span class="stat-label">Continents Explored</span>
               </div>
-            </mat-card-content>
+            </div>
+            <div class="stat-decoration continents"></div>
           </mat-card>
         </div>
 
@@ -94,224 +100,336 @@ import { Destination, DestinationStats } from '../../models';
           <section class="recent-section">
             <div class="section-header">
               <h2>Recent Destinations</h2>
-              <a mat-button routerLink="/destinations">View All</a>
+              <a mat-button routerLink="/destinations" class="view-all">
+                View All
+                <mat-icon>arrow_forward</mat-icon>
+              </a>
             </div>
 
             <div class="destinations-grid">
               @for (dest of recentDestinations(); track dest.id) {
                 <mat-card class="destination-card" [routerLink]="['/destinations', dest.id]">
-                  <div class="destination-image" [style.background-image]="'url(' + getDestinationImage(dest) + ')'">
+                  <div class="card-image" [style.background-image]="'url(' + getDestinationImage(dest) + ')'">
                     @if (dest.visited) {
-                      <mat-chip class="visited-chip">Visited</mat-chip>
+                      <div class="visited-badge">
+                        <mat-icon>check</mat-icon>
+                        Visited
+                      </div>
                     }
+                    <div class="card-overlay">
+                      <h3>{{ dest.city?.name }}</h3>
+                    </div>
                   </div>
                   <mat-card-content>
-                    <h3>{{ dest.city?.name }}</h3>
-                    <p class="location">
+                    <div class="card-location">
                       <mat-icon>location_on</mat-icon>
-                      {{ dest.city?.country?.name }}, {{ dest.city?.country?.continent?.name }}
-                    </p>
-                    <div class="card-stats">
-                      <span><mat-icon>photo_camera</mat-icon> {{ dest.photos?.length || 0 }}</span>
-                      <span><mat-icon>checklist</mat-icon> {{ dest.activities?.length || 0 }}</span>
+                      <span>{{ dest.city?.country?.name }}</span>
+                    </div>
+                    <div class="card-meta">
+                      <span class="meta-item">
+                        <mat-icon>photo_camera</mat-icon>
+                        {{ dest.photos?.length || 0 }}
+                      </span>
+                      <span class="meta-item">
+                        <mat-icon>checklist</mat-icon>
+                        {{ dest.activities?.length || 0 }}
+                      </span>
                     </div>
                   </mat-card-content>
                 </mat-card>
               }
             </div>
           </section>
+
+          @if (getContinentCount() > 0) {
+            <section class="continents-section">
+              <h2>Your Global Footprint</h2>
+              <div class="continent-cards">
+                @for (continent of getContinentEntries(); track continent[0]) {
+                  <div class="continent-item">
+                    <div class="continent-icon">
+                      <mat-icon>{{ getContinentIcon(continent[0]) }}</mat-icon>
+                    </div>
+                    <div class="continent-info">
+                      <span class="continent-name">{{ continent[0] }}</span>
+                      <span class="continent-count">{{ continent[1] }} {{ continent[1] === 1 ? 'destination' : 'destinations' }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </section>
+          }
         } @else {
           <mat-card class="empty-state">
-            <mat-card-content>
+            <div class="empty-icon">
               <mat-icon>flight_takeoff</mat-icon>
-              <h2>Start Your Journey</h2>
-              <p>You haven't added any destinations yet. Explore the world and add places you want to visit!</p>
-              <button mat-raised-button color="primary" routerLink="/explore">
-                Explore Destinations
-              </button>
-            </mat-card-content>
-          </mat-card>
-        }
-
-        @if (getContinentCount() > 0) {
-          <section class="continents-section">
-            <h2>Destinations by Continent</h2>
-            <div class="continent-chips">
-              @for (continent of getContinentEntries(); track continent[0]) {
-                <mat-chip class="continent-chip">
-                  {{ continent[0] }}: {{ continent[1] }}
-                </mat-chip>
-              }
             </div>
-          </section>
+            <h2>Start Your Journey</h2>
+            <p>You haven't added any destinations yet. Explore the world and add places you want to visit!</p>
+            <button mat-flat-button color="primary" routerLink="/explore">
+              <mat-icon>explore</mat-icon>
+              Explore Destinations
+            </button>
+          </mat-card>
         }
       }
     </div>
   `,
   styles: [`
     .dashboard-container {
-      padding: 24px;
-      max-width: 1400px;
-      margin: 0 auto;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+      padding: 32px;
     }
 
     .dashboard-header {
+      margin-bottom: 32px;
+    }
+
+    .welcome-section {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 32px;
-    }
-
-    .dashboard-header h1 {
-      margin: 0;
-      font-size: 28px;
-      color: #1a1a2e;
-    }
-
-    .dashboard-header p {
-      margin: 8px 0 0;
-      color: #666;
-    }
-
-    .loading-container {
-      display: flex;
-      justify-content: center;
-      padding: 48px;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      flex-wrap: wrap;
       gap: 24px;
-      margin-bottom: 32px;
     }
 
-    .stat-card mat-card-content {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 24px !important;
-    }
-
-    .stat-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .stat-icon mat-icon {
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
-      color: white;
-    }
-
-    .stat-icon.total { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    .stat-icon.visited { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
-    .stat-icon.pending { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-    .stat-icon.continents { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-
-    .stat-info {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .stat-value {
+    .welcome-text h1 {
+      margin: 0 0 8px;
       font-size: 32px;
       font-weight: 700;
       color: #1a1a2e;
     }
 
+    .welcome-text p {
+      margin: 0;
+      color: #666;
+      font-size: 16px;
+    }
+
+    .cta-button {
+      padding: 12px 24px;
+      font-size: 15px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      padding: 80px;
+    }
+
+    .stats-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      border-radius: 20px !important;
+      overflow: hidden;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+    }
+
+    .stat-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 28px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-icon-wrapper {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stat-icon-wrapper mat-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      color: white;
+    }
+
+    .stat-icon-wrapper.total { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon-wrapper.visited { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .stat-icon-wrapper.pending { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-icon-wrapper.continents { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+
+    .stat-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-value {
+      font-size: 40px;
+      font-weight: 700;
+      color: #1a1a2e;
+      line-height: 1.1;
+    }
+
     .stat-label {
       color: #666;
       font-size: 14px;
+      margin-top: 4px;
     }
+
+    .stat-decoration {
+      position: absolute;
+      right: -20px;
+      bottom: -20px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      opacity: 0.1;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .stat-decoration.visited { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .stat-decoration.pending { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-decoration.continents { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
 
     .section-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 24px;
     }
 
     .section-header h2 {
       margin: 0;
-      font-size: 20px;
+      font-size: 22px;
+      font-weight: 600;
       color: #1a1a2e;
+    }
+
+    .view-all {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #667eea;
+    }
+
+    .view-all mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
 
     .destinations-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 24px;
+      margin-bottom: 40px;
     }
 
     .destination-card {
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.3s ease;
       overflow: hidden;
+      border-radius: 20px !important;
     }
 
     .destination-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.12);
     }
 
-    .destination-image {
-      height: 160px;
+    .card-image {
+      height: 180px;
       background-size: cover;
       background-position: center;
-      background-color: #e0e0e0;
+      background-color: #e8e8e8;
       position: relative;
     }
 
-    .visited-chip {
+    .visited-badge {
       position: absolute;
-      top: 12px;
-      right: 12px;
-      background: #11998e !important;
-      color: white !important;
-    }
-
-    .destination-card h3 {
-      margin: 0 0 8px;
-      font-size: 18px;
-      color: #1a1a2e;
-    }
-
-    .location {
+      top: 16px;
+      right: 16px;
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
       display: flex;
       align-items: center;
       gap: 4px;
+    }
+
+    .visited-badge mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    .card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%);
+      display: flex;
+      align-items: flex-end;
+      padding: 20px;
+    }
+
+    .card-overlay h3 {
+      margin: 0;
+      color: white;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .destination-card mat-card-content {
+      padding: 20px;
+    }
+
+    .card-location {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       color: #666;
       font-size: 14px;
-      margin: 0;
+      margin-bottom: 12px;
     }
 
-    .location mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+    .card-location mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #667eea;
     }
 
-    .card-stats {
+    .card-meta {
       display: flex;
-      gap: 16px;
-      margin-top: 12px;
+      gap: 20px;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       color: #888;
       font-size: 13px;
     }
 
-    .card-stats span {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .card-stats mat-icon {
+    .meta-item mat-icon {
       font-size: 16px;
       width: 16px;
       height: 16px;
@@ -319,47 +437,133 @@ import { Destination, DestinationStats } from '../../models';
 
     .empty-state {
       text-align: center;
-      padding: 48px 24px;
+      padding: 60px 24px;
+      border-radius: 20px !important;
     }
 
-    .empty-state mat-icon {
-      font-size: 64px;
-      width: 64px;
-      height: 64px;
+    .empty-icon {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+
+    .empty-icon mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
       color: #667eea;
-      margin-bottom: 16px;
     }
 
     .empty-state h2 {
-      margin: 0 0 8px;
+      margin: 0 0 12px;
+      font-size: 24px;
       color: #1a1a2e;
     }
 
     .empty-state p {
       color: #666;
       max-width: 400px;
-      margin: 0 auto 24px;
+      margin: 0 auto 28px;
+      line-height: 1.6;
+    }
+
+    .empty-state button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
     }
 
     .continents-section {
-      margin-top: 32px;
+      background: white;
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
     }
 
     .continents-section h2 {
-      margin: 0 0 16px;
+      margin: 0 0 24px;
       font-size: 20px;
       color: #1a1a2e;
     }
 
-    .continent-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+    .continent-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
     }
 
-    .continent-chip {
-      background: #667eea !important;
-      color: white !important;
+    .continent-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: #f8f9ff;
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+
+    .continent-item:hover {
+      background: #f0f2ff;
+      transform: translateX(4px);
+    }
+
+    .continent-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .continent-icon mat-icon {
+      color: white;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+
+    .continent-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .continent-name {
+      font-weight: 600;
+      color: #1a1a2e;
+      font-size: 15px;
+    }
+
+    .continent-count {
+      color: #666;
+      font-size: 13px;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-container {
+        padding: 20px;
+      }
+
+      .welcome-section {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .welcome-text h1 {
+        font-size: 24px;
+      }
+
+      .destinations-grid {
+        grid-template-columns: 1fr;
+      }
     }
   `]
 })
@@ -398,7 +602,20 @@ export class DashboardComponent implements OnInit {
 
   getContinentEntries(): [string, number][] {
     const stats = this.stats()?.continentStats || {};
-    return Object.entries(stats) as [string, number][];
+    return Object.entries(stats).sort((a, b) => b[1] - a[1]) as [string, number][];
+  }
+
+  getContinentIcon(name: string): string {
+    const icons: Record<string, string> = {
+      'Africa': 'terrain',
+      'Antarctica': 'ac_unit',
+      'Asia': 'temple_buddhist',
+      'Europe': 'account_balance',
+      'North America': 'landscape',
+      'Oceania': 'waves',
+      'South America': 'forest'
+    };
+    return icons[name] || 'public';
   }
 
   getDestinationImage(dest: Destination): string {

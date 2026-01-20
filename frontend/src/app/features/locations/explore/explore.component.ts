@@ -8,7 +8,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatTabsModule } from '@angular/material/tabs';
 import { LocationsService } from '../../../core/services/locations.service';
 import { DestinationsService } from '../../../core/services/destinations.service';
 import { Continent, Country, City } from '../../../models';
@@ -27,85 +28,145 @@ import { debounceTime, Subject } from 'rxjs';
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatChipsModule,
-    MatDialogModule
+    MatDialogModule,
+    MatTabsModule
   ],
   template: `
     <div class="explore-container">
       <header class="explore-header">
-        <h1>Explore the World</h1>
-        <p>Discover new destinations and add them to your wishlist</p>
+        <div class="header-content">
+          <h1>Explore the World</h1>
+          <p>Discover amazing destinations and add them to your travel wishlist</p>
+        </div>
+        <div class="header-stats">
+          <div class="stat">
+            <span class="stat-number">{{ continents().length }}</span>
+            <span class="stat-label">Continents</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">{{ totalCountries }}</span>
+            <span class="stat-label">Countries</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">{{ totalCities }}+</span>
+            <span class="stat-label">Cities</span>
+          </div>
+        </div>
       </header>
 
-      <mat-form-field appearance="outline" class="search-field">
-        <mat-label>Search cities</mat-label>
-        <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearch($event)" placeholder="Search for a city...">
-        <mat-icon matPrefix>search</mat-icon>
-        @if (searchQuery) {
-          <button mat-icon-button matSuffix (click)="clearSearch()">
-            <mat-icon>close</mat-icon>
-          </button>
-        }
-      </mat-form-field>
+      <div class="search-section">
+        <div class="search-container">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearch($event)"
+            placeholder="Search for countries or cities..."
+            class="search-input"
+          >
+          @if (searchQuery) {
+            <button class="clear-btn" (click)="clearSearch()">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </div>
+      </div>
 
       @if (searching()) {
         <div class="loading-container">
           <mat-spinner diameter="40"></mat-spinner>
+          <p>Searching...</p>
         </div>
-      } @else if (searchResults().length > 0) {
+      } @else if (searchQuery && (searchResultsCountries().length > 0 || searchResultsCities().length > 0)) {
         <section class="search-results">
-          <h2>Search Results</h2>
-          <div class="cities-grid">
-            @for (city of searchResults(); track city.id) {
-              <mat-card class="city-card">
-                <mat-card-content>
-                  <h3>{{ city.name }}</h3>
-                  <p class="location">
-                    <mat-icon>location_on</mat-icon>
-                    {{ city.country?.name }}, {{ city.country?.continent?.name }}
-                  </p>
-                </mat-card-content>
-                <mat-card-actions>
-                  <button mat-raised-button color="primary" (click)="addToWishlist(city)" [disabled]="addingCity() === city.id">
-                    @if (addingCity() === city.id) {
-                      <mat-spinner diameter="20"></mat-spinner>
-                    } @else {
-                      <mat-icon>add</mat-icon>
-                      Add to Wishlist
-                    }
-                  </button>
-                </mat-card-actions>
-              </mat-card>
-            }
-          </div>
+          @if (searchResultsCountries().length > 0) {
+            <div class="results-section">
+              <h2>
+                <mat-icon>flag</mat-icon>
+                Countries
+              </h2>
+              <div class="countries-results-grid">
+                @for (country of searchResultsCountries(); track country.id) {
+                  <mat-card class="country-result-card" (click)="selectCountryFromSearch(country)">
+                    <div class="country-flag">{{ getFlag(country.code) }}</div>
+                    <div class="country-info">
+                      <h3>{{ country.name }}</h3>
+                      <span class="continent-badge">{{ country.continent?.name }}</span>
+                    </div>
+                    <mat-icon class="arrow-icon">chevron_right</mat-icon>
+                  </mat-card>
+                }
+              </div>
+            </div>
+          }
+
+          @if (searchResultsCities().length > 0) {
+            <div class="results-section">
+              <h2>
+                <mat-icon>location_city</mat-icon>
+                Cities
+              </h2>
+              <div class="cities-results-grid">
+                @for (city of searchResultsCities(); track city.id) {
+                  <mat-card class="city-result-card">
+                    <mat-card-content>
+                      <div class="city-header">
+                        <h3>{{ city.name }}</h3>
+                        <span class="city-flag">{{ getFlag(city.country?.code || '') }}</span>
+                      </div>
+                      <p class="city-location">
+                        <mat-icon>place</mat-icon>
+                        {{ city.country?.name }}, {{ city.country?.continent?.name }}
+                      </p>
+                    </mat-card-content>
+                    <mat-card-actions>
+                      <button mat-flat-button color="primary" (click)="addToWishlist(city)" [disabled]="addingCity() === city.id">
+                        @if (addingCity() === city.id) {
+                          <mat-spinner diameter="18"></mat-spinner>
+                        } @else {
+                          <mat-icon>add</mat-icon>
+                          Add to Wishlist
+                        }
+                      </button>
+                    </mat-card-actions>
+                  </mat-card>
+                }
+              </div>
+            </div>
+          }
         </section>
       } @else if (searchQuery && !searching()) {
         <div class="no-results">
           <mat-icon>search_off</mat-icon>
-          <p>No cities found matching "{{ searchQuery }}"</p>
+          <h3>No results found</h3>
+          <p>No countries or cities matching "{{ searchQuery }}"</p>
         </div>
       }
 
       @if (!searchQuery) {
         <nav class="breadcrumb">
-          <button mat-button (click)="goBack()" [disabled]="!selectedContinent()">
-            <mat-icon>arrow_back</mat-icon>
-            @if (selectedCountry()) {
-              {{ selectedContinent()?.name }}
-            } @else if (selectedContinent()) {
+          @if (selectedContinent() || selectedCountry()) {
+            <button class="breadcrumb-btn" (click)="goToHome()">
+              <mat-icon>public</mat-icon>
               All Continents
+            </button>
+            @if (selectedContinent()) {
+              <mat-icon class="breadcrumb-separator">chevron_right</mat-icon>
+              <button class="breadcrumb-btn" [class.active]="!selectedCountry()" (click)="goToContinent()">
+                {{ selectedContinent()?.name }}
+              </button>
             }
-          </button>
-          @if (selectedContinent() && !selectedCountry()) {
-            <span>{{ selectedContinent()?.name }}</span>
-          }
-          @if (selectedCountry()) {
-            <span>{{ selectedCountry()?.name }}</span>
+            @if (selectedCountry()) {
+              <mat-icon class="breadcrumb-separator">chevron_right</mat-icon>
+              <span class="breadcrumb-current">{{ selectedCountry()?.name }}</span>
+            }
           }
         </nav>
 
         @if (loading()) {
           <div class="loading-container">
             <mat-spinner></mat-spinner>
+            <p>Loading...</p>
           </div>
         } @else if (!selectedContinent()) {
           <section class="continents-section">
@@ -116,6 +177,7 @@ import { debounceTime, Subject } from 'rxjs';
                   <div class="continent-image" [style.background-image]="'url(' + getContinentImage(continent.name) + ')'">
                     <div class="continent-overlay">
                       <h3>{{ continent.name }}</h3>
+                      <p class="continent-desc">{{ getContinentDescription(continent.name) }}</p>
                     </div>
                   </div>
                 </mat-card>
@@ -124,27 +186,41 @@ import { debounceTime, Subject } from 'rxjs';
           </section>
         } @else if (!selectedCountry()) {
           <section class="countries-section">
-            <h2>Countries in {{ selectedContinent()?.name }}</h2>
+            <div class="section-header">
+              <h2>Countries in {{ selectedContinent()?.name }}</h2>
+              <span class="count-badge">{{ countries().length }} countries</span>
+            </div>
             <div class="countries-grid">
               @for (country of countries(); track country.id) {
                 <mat-card class="country-card" (click)="selectCountry(country)">
-                  <mat-card-content>
+                  <div class="country-flag-large">{{ getFlag(country.code) }}</div>
+                  <div class="country-content">
                     <h3>{{ country.name }}</h3>
                     <span class="country-code">{{ country.code }}</span>
-                  </mat-card-content>
+                  </div>
                 </mat-card>
               }
             </div>
           </section>
         } @else {
           <section class="cities-section">
-            <h2>Cities in {{ selectedCountry()?.name }}</h2>
+            <div class="section-header">
+              <h2>
+                <span class="country-flag-inline">{{ getFlag(selectedCountry()?.code || '') }}</span>
+                Popular Cities in {{ selectedCountry()?.name }}
+              </h2>
+              <span class="count-badge">{{ cities().length }} cities</span>
+            </div>
             @if (cities().length > 0) {
               <div class="cities-grid">
                 @for (city of cities(); track city.id) {
                   <mat-card class="city-card">
+                    <div class="city-image" [style.background-image]="'url(' + getCityImage(city.name) + ')'">
+                      <div class="city-overlay">
+                        <h3>{{ city.name }}</h3>
+                      </div>
+                    </div>
                     <mat-card-content>
-                      <h3>{{ city.name }}</h3>
                       @if (city.latitude && city.longitude) {
                         <p class="coordinates">
                           <mat-icon>my_location</mat-icon>
@@ -153,9 +229,9 @@ import { debounceTime, Subject } from 'rxjs';
                       }
                     </mat-card-content>
                     <mat-card-actions>
-                      <button mat-raised-button color="primary" (click)="addToWishlist(city)" [disabled]="addingCity() === city.id">
+                      <button mat-flat-button color="primary" (click)="addToWishlist(city)" [disabled]="addingCity() === city.id">
                         @if (addingCity() === city.id) {
-                          <mat-spinner diameter="20"></mat-spinner>
+                          <mat-spinner diameter="18"></mat-spinner>
                         } @else {
                           <mat-icon>add</mat-icon>
                           Add to Wishlist
@@ -168,7 +244,8 @@ import { debounceTime, Subject } from 'rxjs';
             } @else {
               <div class="no-cities">
                 <mat-icon>location_city</mat-icon>
-                <p>No cities available for this country yet</p>
+                <h3>No cities available yet</h3>
+                <p>We're working on adding cities for this country</p>
               </div>
             }
           </section>
@@ -178,75 +255,232 @@ import { debounceTime, Subject } from 'rxjs';
   `,
   styles: [`
     .explore-container {
-      padding: 24px;
-      max-width: 1400px;
-      margin: 0 auto;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
     }
 
     .explore-header {
-      margin-bottom: 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 48px 32px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 24px;
     }
 
-    .explore-header h1 {
+    .header-content h1 {
       margin: 0;
-      font-size: 28px;
-      color: #1a1a2e;
+      font-size: 36px;
+      font-weight: 700;
     }
 
-    .explore-header p {
+    .header-content p {
       margin: 8px 0 0;
-      color: #666;
+      opacity: 0.9;
+      font-size: 16px;
     }
 
-    .search-field {
-      width: 100%;
-      max-width: 500px;
-      margin-bottom: 24px;
+    .header-stats {
+      display: flex;
+      gap: 32px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-number {
+      display: block;
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .search-section {
+      padding: 24px 32px;
+      margin-top: -30px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .search-container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+      display: flex;
+      align-items: center;
+      padding: 8px 20px;
+      gap: 12px;
+    }
+
+    .search-icon {
+      color: #667eea;
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+
+    .search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 18px;
+      padding: 16px 0;
+      background: transparent;
+    }
+
+    .search-input::placeholder {
+      color: #999;
+    }
+
+    .clear-btn {
+      background: #f0f0f0;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .clear-btn:hover {
+      background: #e0e0e0;
+    }
+
+    .clear-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
 
     .loading-container {
       display: flex;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
-      padding: 48px;
+      padding: 80px;
+      gap: 16px;
+      color: #666;
     }
 
     .breadcrumb {
-      margin-bottom: 24px;
+      padding: 16px 32px;
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
     }
 
-    .breadcrumb span {
+    .breadcrumb-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: white;
+      border: 1px solid #e0e0e0;
+      padding: 8px 16px;
+      border-radius: 24px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #666;
+      transition: all 0.2s;
+    }
+
+    .breadcrumb-btn:hover {
+      background: #f5f5f5;
+      border-color: #667eea;
       color: #667eea;
-      font-weight: 500;
+    }
+
+    .breadcrumb-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .breadcrumb-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .breadcrumb-separator {
+      color: #ccc;
+      font-size: 20px;
+    }
+
+    .breadcrumb-current {
+      font-weight: 600;
+      color: #333;
+    }
+
+    section {
+      padding: 24px 32px 48px;
     }
 
     h2 {
-      margin: 0 0 16px;
-      font-size: 20px;
+      margin: 0 0 24px;
+      font-size: 24px;
       color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h2 mat-icon {
+      color: #667eea;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .section-header h2 {
+      margin: 0;
+    }
+
+    .count-badge {
+      background: #667eea20;
+      color: #667eea;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
     }
 
     .continents-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
       gap: 24px;
     }
 
     .continent-card {
       cursor: pointer;
       overflow: hidden;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.3s;
+      border-radius: 16px !important;
     }
 
     .continent-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
     }
 
     .continent-image {
-      height: 180px;
+      height: 220px;
       background-size: cover;
       background-position: center;
       position: relative;
@@ -255,94 +489,311 @@ import { debounceTime, Subject } from 'rxjs';
     .continent-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+      background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
       display: flex;
-      align-items: flex-end;
-      padding: 20px;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 24px;
     }
 
     .continent-overlay h3 {
       margin: 0;
       color: white;
-      font-size: 24px;
+      font-size: 28px;
+      font-weight: 700;
     }
 
-    .countries-grid, .cities-grid {
+    .continent-desc {
+      margin: 8px 0 0;
+      color: rgba(255,255,255,0.8);
+      font-size: 14px;
+    }
+
+    .countries-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 16px;
     }
 
     .country-card {
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.2s;
+      border-radius: 12px !important;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
     }
 
     .country-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      border-color: #667eea;
     }
 
-    .country-card h3 {
-      margin: 0 0 4px;
-      font-size: 18px;
+    .country-flag-large {
+      font-size: 48px;
+      line-height: 1;
+    }
+
+    .country-content h3 {
+      margin: 0;
+      font-size: 16px;
       color: #1a1a2e;
+      font-weight: 600;
     }
 
     .country-code {
-      color: #666;
-      font-size: 14px;
+      color: #999;
+      font-size: 12px;
+    }
+
+    .cities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
     }
 
     .city-card {
+      border-radius: 16px !important;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+
+    .city-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+    }
+
+    .city-image {
+      height: 160px;
+      background-size: cover;
+      background-position: center;
+      background-color: #e8e8e8;
+      position: relative;
+    }
+
+    .city-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
       display: flex;
-      flex-direction: column;
+      align-items: flex-end;
+      padding: 16px;
+    }
+
+    .city-overlay h3 {
+      margin: 0;
+      color: white;
+      font-size: 20px;
+      font-weight: 600;
     }
 
     .city-card mat-card-content {
-      flex: 1;
+      padding: 16px;
     }
 
-    .city-card h3 {
-      margin: 0 0 8px;
-      font-size: 18px;
-      color: #1a1a2e;
-    }
-
-    .location, .coordinates {
+    .coordinates {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
       color: #666;
-      font-size: 14px;
+      font-size: 13px;
       margin: 0;
     }
 
-    .location mat-icon, .coordinates mat-icon {
+    .coordinates mat-icon {
       font-size: 16px;
       width: 16px;
       height: 16px;
+      color: #667eea;
     }
 
     .city-card mat-card-actions {
-      padding: 8px 16px 16px;
+      padding: 12px 16px 16px;
+    }
+
+    .city-card mat-card-actions button {
+      width: 100%;
+      border-radius: 8px;
     }
 
     .no-results, .no-cities {
       text-align: center;
-      padding: 48px;
+      padding: 80px 20px;
       color: #666;
     }
 
     .no-results mat-icon, .no-cities mat-icon {
-      font-size: 64px;
-      width: 64px;
-      height: 64px;
+      font-size: 80px;
+      width: 80px;
+      height: 80px;
+      color: #ddd;
+      margin-bottom: 16px;
+    }
+
+    .no-results h3, .no-cities h3 {
+      margin: 0 0 8px;
+      color: #333;
+    }
+
+    .no-results p, .no-cities p {
+      margin: 0;
+    }
+
+    .search-results {
+      padding: 24px 32px;
+    }
+
+    .results-section {
+      margin-bottom: 32px;
+    }
+
+    .results-section h2 {
+      font-size: 18px;
+      margin-bottom: 16px;
+    }
+
+    .countries-results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .country-result-card {
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      gap: 16px;
+      cursor: pointer;
+      border-radius: 12px !important;
+      transition: all 0.2s;
+    }
+
+    .country-result-card:hover {
+      background: #f8f9ff;
+      transform: translateX(4px);
+    }
+
+    .country-flag {
+      font-size: 32px;
+    }
+
+    .country-info {
+      flex: 1;
+    }
+
+    .country-info h3 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      color: #1a1a2e;
+    }
+
+    .continent-badge {
+      font-size: 12px;
+      color: #667eea;
+      background: #667eea15;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .arrow-icon {
       color: #ccc;
     }
 
-    .search-results h2 {
-      margin-bottom: 16px;
+    .cities-results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .city-result-card {
+      border-radius: 12px !important;
+    }
+
+    .city-result-card mat-card-content {
+      padding: 16px;
+    }
+
+    .city-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .city-header h3 {
+      margin: 0;
+      font-size: 18px;
+      color: #1a1a2e;
+    }
+
+    .city-flag {
+      font-size: 24px;
+    }
+
+    .city-location {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #666;
+      font-size: 13px;
+      margin: 0;
+    }
+
+    .city-location mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #667eea;
+    }
+
+    .city-result-card mat-card-actions {
+      padding: 12px 16px 16px;
+    }
+
+    .city-result-card mat-card-actions button {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .country-flag-inline {
+      font-size: 28px;
+      margin-right: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .explore-header {
+        padding: 32px 20px;
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .header-content h1 {
+        font-size: 28px;
+      }
+
+      .header-stats {
+        gap: 24px;
+      }
+
+      .search-section {
+        padding: 24px 20px;
+      }
+
+      section {
+        padding: 20px;
+      }
+
+      .continents-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .breadcrumb {
+        padding: 16px 20px;
+      }
     }
   `]
 })
@@ -350,7 +801,8 @@ export class ExploreComponent implements OnInit {
   loading = signal(true);
   searching = signal(false);
   searchQuery = '';
-  searchResults = signal<City[]>([]);
+  searchResultsCountries = signal<Country[]>([]);
+  searchResultsCities = signal<City[]>([]);
 
   continents = signal<Continent[]>([]);
   countries = signal<Country[]>([]);
@@ -359,6 +811,9 @@ export class ExploreComponent implements OnInit {
   selectedContinent = signal<Continent | null>(null);
   selectedCountry = signal<Country | null>(null);
   addingCity = signal<number | null>(null);
+
+  totalCountries = 155;
+  totalCities = 400;
 
   private searchSubject = new Subject<string>();
 
@@ -371,7 +826,8 @@ export class ExploreComponent implements OnInit {
       if (query.length >= 2) {
         this.performSearch(query);
       } else {
-        this.searchResults.set([]);
+        this.searchResultsCountries.set([]);
+        this.searchResultsCities.set([]);
         this.searching.set(false);
       }
     });
@@ -393,6 +849,7 @@ export class ExploreComponent implements OnInit {
 
   selectContinent(continent: Continent): void {
     this.selectedContinent.set(continent);
+    this.selectedCountry.set(null);
     this.loading.set(true);
     this.locationsService.getCountriesByContinent(continent.id).subscribe({
       next: (countries) => {
@@ -415,14 +872,24 @@ export class ExploreComponent implements OnInit {
     });
   }
 
-  goBack(): void {
-    if (this.selectedCountry()) {
-      this.selectedCountry.set(null);
-      this.cities.set([]);
-    } else if (this.selectedContinent()) {
-      this.selectedContinent.set(null);
-      this.countries.set([]);
+  selectCountryFromSearch(country: Country): void {
+    this.clearSearch();
+    if (country.continent) {
+      this.selectedContinent.set(country.continent);
     }
+    this.selectCountry(country);
+  }
+
+  goToHome(): void {
+    this.selectedContinent.set(null);
+    this.selectedCountry.set(null);
+    this.countries.set([]);
+    this.cities.set([]);
+  }
+
+  goToContinent(): void {
+    this.selectedCountry.set(null);
+    this.cities.set([]);
   }
 
   onSearch(query: string): void {
@@ -433,9 +900,10 @@ export class ExploreComponent implements OnInit {
   }
 
   performSearch(query: string): void {
-    this.locationsService.searchCities(query).subscribe({
-      next: (cities) => {
-        this.searchResults.set(cities);
+    this.locationsService.searchLocations(query).subscribe({
+      next: (results) => {
+        this.searchResultsCountries.set(results.countries);
+        this.searchResultsCities.set(results.cities);
         this.searching.set(false);
       },
       error: () => this.searching.set(false)
@@ -444,7 +912,8 @@ export class ExploreComponent implements OnInit {
 
   clearSearch(): void {
     this.searchQuery = '';
-    this.searchResults.set([]);
+    this.searchResultsCountries.set([]);
+    this.searchResultsCities.set([]);
   }
 
   addToWishlist(city: City): void {
@@ -461,16 +930,54 @@ export class ExploreComponent implements OnInit {
     });
   }
 
+  getFlag(code: string): string {
+    if (!code) return '';
+    const codePoints = code
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  }
+
   getContinentImage(name: string): string {
     const images: Record<string, string> = {
-      'Africa': 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600',
-      'Antarctica': 'https://images.unsplash.com/photo-1551415923-a2297c7fda79?w=600',
-      'Asia': 'https://images.unsplash.com/photo-1480796927426-f609979314bd?w=600',
-      'Europe': 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=600',
-      'North America': 'https://images.unsplash.com/photo-1485738422979-f5c462d49f74?w=600',
-      'Oceania': 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=600',
-      'South America': 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=600'
+      'Africa': 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
+      'Antarctica': 'https://images.unsplash.com/photo-1551415923-a2297c7fda79?w=800',
+      'Asia': 'https://images.unsplash.com/photo-1480796927426-f609979314bd?w=800',
+      'Europe': 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=800',
+      'North America': 'https://images.unsplash.com/photo-1485738422979-f5c462d49f74?w=800',
+      'Oceania': 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=800',
+      'South America': 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=800'
     };
-    return images[name] || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600';
+    return images[name] || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800';
+  }
+
+  getContinentDescription(name: string): string {
+    const descriptions: Record<string, string> = {
+      'Africa': 'Safaris, pyramids, and diverse cultures',
+      'Antarctica': 'The frozen frontier of adventure',
+      'Asia': 'Ancient temples and modern cities',
+      'Europe': 'History, art, and culinary delights',
+      'North America': 'From tropical beaches to arctic wilderness',
+      'Oceania': 'Island paradises and unique wildlife',
+      'South America': 'Rainforests, mountains, and vibrant culture'
+    };
+    return descriptions[name] || 'Explore amazing destinations';
+  }
+
+  getCityImage(cityName: string): string {
+    const images: Record<string, string> = {
+      'Tokyo': 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600',
+      'Paris': 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600',
+      'London': 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600',
+      'New York City': 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=600',
+      'Sydney': 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=600',
+      'Dubai': 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600',
+      'Singapore': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=600',
+      'Rome': 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600',
+      'Barcelona': 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=600',
+      'Bangkok': 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=600'
+    };
+    return images[cityName] || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600';
   }
 }

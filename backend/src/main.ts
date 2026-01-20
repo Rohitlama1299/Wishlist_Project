@@ -7,10 +7,15 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const configService = app.get(ConfigService);
+  const isProduction = configService.get('NODE_ENV') === 'production';
 
   // Enable CORS for Angular frontend
+  const allowedOrigins = isProduction
+    ? [configService.get('FRONTEND_URL', 'https://wishlist-travel.vercel.app')]
+    : ['http://localhost:4200', 'http://localhost:3000'];
+
   app.enableCors({
-    origin: ['http://localhost:4200', 'http://localhost:3000'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   });
@@ -31,8 +36,9 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   const port = configService.get<number>('PORT', 3000);
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
-  console.log(`Application is running on: http://localhost:${port}/api`);
+  console.log(`Application is running on port ${port}`);
+  console.log(`Environment: ${isProduction ? 'production' : 'development'}`);
 }
 bootstrap();

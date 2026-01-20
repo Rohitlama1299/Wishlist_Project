@@ -48,6 +48,12 @@ export class LocationsController {
     return this.locationsService.getCitiesByCountry(id);
   }
 
+  // Search
+  @Get('search')
+  searchLocations(@Query('q') query: string) {
+    return this.locationsService.searchLocations(query || '');
+  }
+
   // Cities
   @Get('cities/search')
   searchCities(@Query('q') query: string) {

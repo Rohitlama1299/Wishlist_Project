@@ -1,13 +1,18 @@
 @use '@angular/material' as mat;
 
+// Google Fonts
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 html, body {
   height: 100%;
 }
 
 body {
   margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
-  background-color: #f5f5f5;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  background-color: #f8f9ff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -27,6 +32,7 @@ a {
 
 ::-webkit-scrollbar-track {
   background: #f1f1f1;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -41,11 +47,15 @@ a {
 // Material overrides
 .mat-mdc-card {
   --mdc-elevated-card-container-color: white;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05) !important;
+  border: 1px solid rgba(0,0,0,0.04);
 }
 
 .mat-mdc-snack-bar-container {
-  --mdc-snackbar-container-color: #323232;
+  --mdc-snackbar-container-color: #1a1a2e;
   --mdc-snackbar-supporting-text-color: white;
+  border-radius: 12px !important;
 }
 
 // Form field adjustments
@@ -53,8 +63,105 @@ a {
   width: 100%;
 }
 
+.mat-mdc-form-field-subscript-wrapper {
+  height: auto;
+}
+
+// Button styles
+.mat-mdc-raised-button,
+.mat-mdc-flat-button {
+  border-radius: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+}
+
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-flat-button.mat-primary {
+  --mdc-filled-button-container-color: #667eea;
+  --mdc-filled-button-label-text-color: white;
+}
+
+.mat-mdc-raised-button.mat-primary:hover,
+.mat-mdc-flat-button.mat-primary:hover {
+  --mdc-filled-button-container-color: #5a6fd1;
+}
+
+// Outlined button
+.mat-mdc-outlined-button {
+  border-radius: 12px !important;
+}
+
+// Icon button
+.mat-mdc-icon-button {
+  --mdc-icon-button-state-layer-size: 40px;
+}
+
 // Button spinner alignment
 button .mat-mdc-progress-spinner {
   display: inline-block;
   margin-right: 8px;
+}
+
+// Chips
+.mat-mdc-chip {
+  border-radius: 8px !important;
+}
+
+// Menu
+.mat-mdc-menu-panel {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
+}
+
+.mat-mdc-menu-item {
+  border-radius: 8px;
+  margin: 4px 8px;
+  min-height: 44px;
+}
+
+// Dialog
+.mat-mdc-dialog-container {
+  --mdc-dialog-container-shape: 20px;
+}
+
+// Progress spinner
+.mat-mdc-progress-spinner {
+  --mdc-circular-progress-active-indicator-color: #667eea;
+}
+
+// Tabs
+.mat-mdc-tab-group {
+  --mdc-tab-indicator-active-indicator-color: #667eea;
+  --mat-tab-header-active-label-text-color: #667eea;
+  --mat-tab-header-active-focus-label-text-color: #667eea;
+  --mat-tab-header-active-hover-label-text-color: #667eea;
+}
+
+// Selection styles
+::selection {
+  background: #667eea;
+  color: white;
+}
+
+// Animation utilities
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+// Responsive utilities
+@media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .hide-on-desktop {
+    display: none !important;
+  }
 }

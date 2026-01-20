@@ -4,6 +4,7 @@ export interface User {
   firstName: string;
   lastName: string;
   profilePicture?: string;
+  createdAt?: Date;
 }
 
 export interface LoginRequest {

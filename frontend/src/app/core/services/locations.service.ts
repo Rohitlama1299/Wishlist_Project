@@ -38,6 +38,13 @@ export class LocationsService {
     return this.http.get<City[]>(`${this.apiUrl}/countries/${countryId}/cities`);
   }
 
+  // Search
+  searchLocations(query: string): Observable<{ countries: Country[]; cities: City[] }> {
+    return this.http.get<{ countries: Country[]; cities: City[] }>(`${this.apiUrl}/search`, {
+      params: { q: query }
+    });
+  }
+
   // Cities
   searchCities(query: string): Observable<City[]> {
     return this.http.get<City[]>(`${this.apiUrl}/cities/search`, {
