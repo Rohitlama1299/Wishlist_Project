@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -31,8 +31,22 @@ import { User, DestinationStats } from '../../models';
       <header class="profile-header">
         <div class="header-content">
           <div class="avatar-section">
-            <div class="avatar-large">
-              {{ getUserInitials() }}
+            <div class="avatar-wrapper" (click)="triggerFileInput()">
+              <div class="avatar-large" [style.background-image]="profilePicture() ? 'url(' + profilePicture() + ')' : 'none'">
+                @if (!profilePicture()) {
+                  {{ getUserInitials() }}
+                }
+              </div>
+              <div class="avatar-overlay">
+                <mat-icon>camera_alt</mat-icon>
+              </div>
+              <input
+                type="file"
+                #fileInput
+                accept="image/*"
+                (change)="onFileSelected($event)"
+                style="display: none"
+              >
             </div>
             <div class="user-info">
               <h1>{{ user()?.firstName }} {{ user()?.lastName }}</h1>
@@ -207,17 +221,52 @@ import { User, DestinationStats } from '../../models';
       gap: 24px;
     }
 
+    .avatar-wrapper {
+      position: relative;
+      cursor: pointer;
+    }
+
     .avatar-large {
       width: 100px;
       height: 100px;
       border-radius: 50%;
       background: rgba(255,255,255,0.2);
+      background-size: cover;
+      background-position: center;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 36px;
       font-weight: 700;
       border: 4px solid rgba(255,255,255,0.3);
+      transition: all 0.3s;
+    }
+
+    .avatar-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .avatar-overlay mat-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      color: white;
+    }
+
+    .avatar-wrapper:hover .avatar-overlay {
+      opacity: 1;
+    }
+
+    .avatar-wrapper:hover .avatar-large {
+      border-color: white;
     }
 
     .user-info h1 {
@@ -494,9 +543,12 @@ import { User, DestinationStats } from '../../models';
   `]
 })
 export class ProfileComponent implements OnInit {
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+
   user = signal<User | null>(null);
   stats = signal<DestinationStats | null>(null);
   saving = signal(false);
+  profilePicture = signal<string | null>(null);
   profileForm: FormGroup;
 
   constructor(
@@ -515,6 +567,46 @@ export class ProfileComponent implements OnInit {
   ngOnInit(): void {
     this.loadUserData();
     this.loadStats();
+    this.loadProfilePicture();
+  }
+
+  loadProfilePicture(): void {
+    const savedPicture = localStorage.getItem('profilePicture');
+    if (savedPicture) {
+      this.profilePicture.set(savedPicture);
+    }
+  }
+
+  triggerFileInput(): void {
+    this.fileInput.nativeElement.click();
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        this.snackBar.open('Image too large. Max size is 5MB.', 'Close', { duration: 3000 });
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        this.snackBar.open('Please select an image file.', 'Close', { duration: 3000 });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        this.profilePicture.set(result);
+        localStorage.setItem('profilePicture', result);
+        this.snackBar.open('Profile picture updated!', 'Close', { duration: 3000 });
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
   loadUserData(): void {
