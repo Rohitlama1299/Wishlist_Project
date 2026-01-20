@@ -89,6 +89,35 @@ let LocationsService = class LocationsService {
             .limit(20)
             .getMany();
     }
+    async searchCountries(query) {
+        return this.countryRepository
+            .createQueryBuilder('country')
+            .leftJoinAndSelect('country.continent', 'continent')
+            .where('LOWER(country.name) LIKE LOWER(:query)', { query: `%${query}%` })
+            .orderBy('country.name', 'ASC')
+            .limit(20)
+            .getMany();
+    }
+    async searchLocations(query) {
+        const [countries, cities] = await Promise.all([
+            this.countryRepository
+                .createQueryBuilder('country')
+                .leftJoinAndSelect('country.continent', 'continent')
+                .where('LOWER(country.name) LIKE LOWER(:query)', { query: `%${query}%` })
+                .orderBy('country.name', 'ASC')
+                .limit(10)
+                .getMany(),
+            this.cityRepository
+                .createQueryBuilder('city')
+                .leftJoinAndSelect('city.country', 'country')
+                .leftJoinAndSelect('country.continent', 'continent')
+                .where('LOWER(city.name) LIKE LOWER(:query)', { query: `%${query}%` })
+                .orderBy('city.name', 'ASC')
+                .limit(20)
+                .getMany(),
+        ]);
+        return { countries, cities };
+    }
     async createCity(name, countryId, latitude, longitude) {
         const country = await this.countryRepository.findOne({
             where: { id: countryId },

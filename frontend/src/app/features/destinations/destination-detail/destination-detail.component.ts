@@ -368,6 +368,123 @@ import { environment } from '../../../../environments/environment';
     .activity-item:hover .delete-activity {
       opacity: 1;
     }
+
+    /* Tablet */
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .detail-container {
+        padding: 20px;
+      }
+
+      .photos-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .detail-container {
+        padding: 16px;
+      }
+
+      .detail-header {
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .detail-header button {
+        order: -1;
+      }
+
+      .header-info {
+        flex: 1 1 100%;
+        order: 1;
+      }
+
+      .header-info h1 {
+        font-size: 22px;
+      }
+
+      mat-chip {
+        order: 0;
+        margin-left: auto;
+      }
+
+      .notes-card {
+        margin-bottom: 16px;
+      }
+
+      .notes-text {
+        padding: 10px;
+        min-height: 50px;
+        font-size: 14px;
+      }
+
+      .tab-content {
+        padding: 16px 0;
+      }
+
+      .photos-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .add-activity {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .add-activity button {
+        width: 100%;
+      }
+
+      .activity-item {
+        padding: 10px 12px;
+        padding-right: 48px;
+      }
+
+      .activity-name {
+        font-size: 14px;
+      }
+
+      .delete-activity {
+        opacity: 1;
+      }
+
+      .empty-photos, .empty-activities {
+        padding: 32px 16px;
+      }
+
+      .empty-photos mat-icon, .empty-activities mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+      }
+    }
+
+    /* Small mobile */
+    @media (max-width: 480px) {
+      .detail-container {
+        padding: 12px;
+      }
+
+      .header-info h1 {
+        font-size: 20px;
+      }
+
+      .location {
+        font-size: 13px;
+      }
+
+      .photos-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .photo-overlay {
+        opacity: 1;
+        background: linear-gradient(to top, rgba(0,0,0,0.5), transparent 50%);
+      }
+    }
   `]
 })
 export class DestinationDetailComponent implements OnInit {

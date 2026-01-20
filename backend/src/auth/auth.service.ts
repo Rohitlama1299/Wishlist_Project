@@ -89,4 +89,30 @@ export class AuthService {
   async validateUser(userId: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { id: userId } });
   }
+
+  async updateProfile(
+    userId: string,
+    updateData: { firstName?: string; lastName?: string; profilePicture?: string },
+  ): Promise<Partial<User>> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (updateData.firstName) user.firstName = updateData.firstName;
+    if (updateData.lastName) user.lastName = updateData.lastName;
+    if (updateData.profilePicture !== undefined) user.profilePicture = updateData.profilePicture;
+
+    await this.userRepository.save(user);
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profilePicture: user.profilePicture,
+      createdAt: user.createdAt,
+    };
+  }
 }

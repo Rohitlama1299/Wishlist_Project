@@ -296,6 +296,102 @@ import { Destination } from '../../../models';
       color: #666;
       margin: 0 0 24px;
     }
+
+    /* Tablet */
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .destinations-container {
+        padding: 20px;
+      }
+
+      .destinations-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .filters {
+        flex-wrap: wrap;
+      }
+
+      .search-field {
+        min-width: 200px;
+      }
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .destinations-container {
+        padding: 16px;
+      }
+
+      .destinations-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .destinations-header h1 {
+        font-size: 22px;
+      }
+
+      .destinations-header button {
+        width: 100%;
+      }
+
+      .filters {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .search-field {
+        min-width: 100%;
+      }
+
+      .filters mat-form-field {
+        width: 100%;
+      }
+
+      .destinations-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .destination-image {
+        height: 160px;
+      }
+
+      mat-card-content h3 {
+        font-size: 16px;
+      }
+
+      .empty-state {
+        padding: 32px 16px;
+      }
+
+      .empty-state mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+      }
+
+      .empty-state h2 {
+        font-size: 18px;
+      }
+    }
+
+    /* Small mobile */
+    @media (max-width: 480px) {
+      .destinations-container {
+        padding: 12px;
+      }
+
+      .destination-image {
+        height: 140px;
+      }
+
+      .status-chip {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+    }
   `]
 })
 export class DestinationsListComponent implements OnInit {

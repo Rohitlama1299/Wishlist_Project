@@ -736,35 +736,199 @@ import { debounceTime, Subject } from 'rxjs';
       margin-right: 8px;
     }
 
+    /* Tablet */
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .explore-header {
+        padding: 40px 24px;
+      }
+
+      .header-content h1 {
+        font-size: 30px;
+      }
+
+      .continents-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .countries-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .cities-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Mobile */
     @media (max-width: 768px) {
       .explore-header {
-        padding: 32px 20px;
+        padding: 24px 16px;
         flex-direction: column;
         text-align: center;
       }
 
       .header-content h1 {
-        font-size: 28px;
+        font-size: 24px;
+      }
+
+      .header-content p {
+        font-size: 14px;
       }
 
       .header-stats {
-        gap: 24px;
+        gap: 20px;
+      }
+
+      .stat-number {
+        font-size: 24px;
+      }
+
+      .stat-label {
+        font-size: 12px;
       }
 
       .search-section {
-        padding: 24px 20px;
+        padding: 16px;
+        margin-top: -20px;
+      }
+
+      .search-container {
+        border-radius: 12px;
+        padding: 6px 16px;
+      }
+
+      .search-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+
+      .search-input {
+        font-size: 16px;
+        padding: 12px 0;
       }
 
       section {
-        padding: 20px;
+        padding: 16px;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
       }
 
       .continents-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .continent-image {
+        height: 180px;
+      }
+
+      .continent-overlay h3 {
+        font-size: 22px;
+      }
+
+      .countries-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .country-card {
+        padding: 16px;
+      }
+
+      .country-flag-large {
+        font-size: 36px;
+      }
+
+      .country-content h3 {
+        font-size: 14px;
+      }
+
+      .cities-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .city-image {
+        height: 140px;
       }
 
       .breadcrumb {
-        padding: 16px 20px;
+        padding: 12px 16px;
+        gap: 6px;
+      }
+
+      .breadcrumb-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+      }
+
+      .countries-results-grid,
+      .cities-results-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-results {
+        padding: 16px;
+      }
+
+      .no-results, .no-cities {
+        padding: 60px 16px;
+      }
+
+      .no-results mat-icon, .no-cities mat-icon {
+        font-size: 60px;
+        width: 60px;
+        height: 60px;
+      }
+    }
+
+    /* Small mobile */
+    @media (max-width: 480px) {
+      .explore-header {
+        padding: 20px 12px;
+      }
+
+      .header-content h1 {
+        font-size: 20px;
+      }
+
+      .header-stats {
+        gap: 16px;
+      }
+
+      .stat-number {
+        font-size: 20px;
+      }
+
+      .search-section {
+        padding: 12px;
+      }
+
+      section {
+        padding: 12px;
+      }
+
+      .countries-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .country-card {
+        flex-direction: row;
+        text-align: left;
+        gap: 16px;
+      }
+
+      .country-flag-large {
+        font-size: 32px;
       }
     }
   `]

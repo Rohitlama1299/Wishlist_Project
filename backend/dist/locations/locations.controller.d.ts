@@ -9,6 +9,10 @@ export declare class LocationsController {
     getAllCountries(): Promise<import("../entities").Country[]>;
     getCountryById(id: number): Promise<import("../entities").Country>;
     getCitiesByCountry(id: number): Promise<import("../entities").City[]>;
+    searchLocations(query: string): Promise<{
+        countries: import("../entities").Country[];
+        cities: import("../entities").City[];
+    }>;
     searchCities(query: string): Promise<import("../entities").City[]>;
     getCityById(id: number): Promise<import("../entities").City>;
     createCity(createCityDto: CreateCityDto): Promise<import("../entities").City>;

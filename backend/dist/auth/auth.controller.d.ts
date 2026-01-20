@@ -1,5 +1,5 @@
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto } from './dto';
+import { RegisterDto, LoginDto, UpdateProfileDto } from './dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
@@ -17,5 +17,7 @@ export declare class AuthController {
         firstName: any;
         lastName: any;
         profilePicture: any;
+        createdAt: any;
     }>;
+    updateProfile(req: any, updateProfileDto: UpdateProfileDto): Promise<Partial<import("../entities").User>>;
 }

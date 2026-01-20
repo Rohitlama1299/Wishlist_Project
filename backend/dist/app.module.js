@@ -32,17 +32,37 @@ exports.AppModule = AppModule = __decorate([
             }),
             typeorm_1.TypeOrmModule.forRootAsync({
                 imports: [config_1.ConfigModule],
-                useFactory: (configService) => ({
-                    type: 'postgres',
-                    host: configService.get('DB_HOST', 'localhost'),
-                    port: configService.get('DB_PORT', 5432),
-                    username: configService.get('DB_USERNAME', 'postgres'),
-                    password: configService.get('DB_PASSWORD', 'password'),
-                    database: configService.get('DB_NAME', 'travel_wishlist'),
-                    entities: [entities_1.User, entities_1.Continent, entities_1.Country, entities_1.City, entities_1.Destination, entities_1.Photo, entities_1.Activity],
-                    synchronize: configService.get('NODE_ENV') === 'development',
-                    logging: configService.get('NODE_ENV') === 'development',
-                }),
+                useFactory: (configService) => {
+                    const isProduction = configService.get('NODE_ENV') === 'production';
+                    const dbUrl = configService.get('DATABASE_URL');
+                    if (dbUrl) {
+                        return {
+                            type: 'postgres',
+                            url: dbUrl,
+                            entities: [entities_1.User, entities_1.Continent, entities_1.Country, entities_1.City, entities_1.Destination, entities_1.Photo, entities_1.Activity],
+                            synchronize: !isProduction,
+                            logging: !isProduction,
+                            ssl: {
+                                rejectUnauthorized: false,
+                            },
+                        };
+                    }
+                    return {
+                        type: 'postgres',
+                        host: configService.get('DB_HOST', 'localhost'),
+                        port: configService.get('DB_PORT', 5432),
+                        username: configService.get('DB_USERNAME', 'postgres'),
+                        password: configService.get('DB_PASSWORD', 'password'),
+                        database: configService.get('DB_NAME', 'travel_wishlist'),
+                        entities: [entities_1.User, entities_1.Continent, entities_1.Country, entities_1.City, entities_1.Destination, entities_1.Photo, entities_1.Activity],
+                        synchronize: !isProduction,
+                        logging: !isProduction,
+                        ssl: isProduction ? { rejectUnauthorized: false } : false,
+                        extra: isProduction ? {
+                            family: 4,
+                        } : {},
+                    };
+                },
                 inject: [config_1.ConfigService],
             }),
             serve_static_1.ServeStaticModule.forRoot({

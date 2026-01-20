@@ -547,9 +547,29 @@ import { Destination, DestinationStats } from '../../models';
       font-size: 13px;
     }
 
+    /* Tablet */
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .dashboard-container {
+        padding: 24px;
+      }
+
+      .stats-section {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .destinations-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .continent-cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Mobile */
     @media (max-width: 768px) {
       .dashboard-container {
-        padding: 20px;
+        padding: 16px;
       }
 
       .welcome-section {
@@ -558,11 +578,106 @@ import { Destination, DestinationStats } from '../../models';
       }
 
       .welcome-text h1 {
-        font-size: 24px;
+        font-size: 22px;
+      }
+
+      .welcome-text p {
+        font-size: 14px;
+      }
+
+      .cta-button {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .stats-section {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .stat-content {
+        padding: 20px;
+      }
+
+      .stat-icon-wrapper {
+        width: 52px;
+        height: 52px;
+      }
+
+      .stat-icon-wrapper mat-icon {
+        font-size: 26px;
+        width: 26px;
+        height: 26px;
+      }
+
+      .stat-value {
+        font-size: 32px;
+      }
+
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
       }
 
       .destinations-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .card-image {
+        height: 150px;
+      }
+
+      .continents-section {
+        padding: 20px;
+      }
+
+      .continent-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .empty-state {
+        padding: 40px 20px;
+      }
+
+      .empty-icon {
+        width: 80px;
+        height: 80px;
+      }
+
+      .empty-icon mat-icon {
+        font-size: 40px;
+        width: 40px;
+        height: 40px;
+      }
+
+      .empty-state h2 {
+        font-size: 20px;
+      }
+
+      .empty-state button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* Small mobile */
+    @media (max-width: 480px) {
+      .dashboard-container {
+        padding: 12px;
+      }
+
+      .stat-content {
+        gap: 14px;
+      }
+
+      .stat-value {
+        font-size: 28px;
+      }
+
+      .stat-label {
+        font-size: 13px;
       }
     }
   `]

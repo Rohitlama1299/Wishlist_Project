@@ -1,10 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -28,7 +28,7 @@ import { AuthService } from '../../../core/services/auth.service';
   ],
   template: `
     <mat-sidenav-container class="sidenav-container">
-      <mat-sidenav #sidenav mode="side" opened class="sidenav" [fixedInViewport]="true">
+      <mat-sidenav #sidenav [mode]="isMobile() ? 'over' : 'side'" [opened]="!isMobile()" class="sidenav" [fixedInViewport]="true">
         <div class="sidenav-header">
           <div class="logo">
             <div class="logo-icon">
@@ -36,19 +36,24 @@ import { AuthService } from '../../../core/services/auth.service';
             </div>
             <span class="logo-text">Wanderlust</span>
           </div>
+          @if (isMobile()) {
+            <button mat-icon-button class="close-sidenav" (click)="sidenav.close()">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
         </div>
 
         <nav class="nav-section">
           <span class="nav-label">Menu</span>
-          <a class="nav-item" routerLink="/dashboard" routerLinkActive="active">
+          <a class="nav-item" routerLink="/dashboard" routerLinkActive="active" (click)="onNavClick()">
             <mat-icon>dashboard</mat-icon>
             <span>Dashboard</span>
           </a>
-          <a class="nav-item" routerLink="/explore" routerLinkActive="active">
+          <a class="nav-item" routerLink="/explore" routerLinkActive="active" (click)="onNavClick()">
             <mat-icon>explore</mat-icon>
             <span>Explore</span>
           </a>
-          <a class="nav-item" routerLink="/destinations" routerLinkActive="active">
+          <a class="nav-item" routerLink="/destinations" routerLinkActive="active" (click)="onNavClick()">
             <mat-icon>place</mat-icon>
             <span>My Destinations</span>
           </a>
@@ -56,7 +61,7 @@ import { AuthService } from '../../../core/services/auth.service';
 
         <nav class="nav-section">
           <span class="nav-label">Account</span>
-          <a class="nav-item" routerLink="/profile" routerLinkActive="active">
+          <a class="nav-item" routerLink="/profile" routerLinkActive="active" (click)="onNavClick()">
             <mat-icon>person</mat-icon>
             <span>Profile</span>
           </a>
@@ -76,7 +81,7 @@ import { AuthService } from '../../../core/services/auth.service';
         </div>
 
         <mat-menu #userMenu="matMenu" class="user-menu">
-          <button mat-menu-item routerLink="/profile">
+          <button mat-menu-item routerLink="/profile" (click)="onNavClick()">
             <mat-icon>person</mat-icon>
             <span>Profile</span>
           </button>
@@ -89,6 +94,32 @@ import { AuthService } from '../../../core/services/auth.service';
       </mat-sidenav>
 
       <mat-sidenav-content class="content">
+        <!-- Mobile Header -->
+        @if (isMobile()) {
+          <div class="mobile-header">
+            <button mat-icon-button (click)="sidenav.toggle()">
+              <mat-icon>menu</mat-icon>
+            </button>
+            <div class="mobile-logo">
+              <mat-icon>flight_takeoff</mat-icon>
+              <span>Wanderlust</span>
+            </div>
+            <div class="mobile-avatar" [matMenuTriggerFor]="mobileUserMenu">
+              {{ getUserInitials() }}
+            </div>
+            <mat-menu #mobileUserMenu="matMenu">
+              <button mat-menu-item routerLink="/profile">
+                <mat-icon>person</mat-icon>
+                <span>Profile</span>
+              </button>
+              <mat-divider></mat-divider>
+              <button mat-menu-item (click)="logout()">
+                <mat-icon>logout</mat-icon>
+                <span>Logout</span>
+              </button>
+            </mat-menu>
+          </div>
+        }
         <router-outlet></router-outlet>
       </mat-sidenav-content>
     </mat-sidenav-container>
@@ -109,6 +140,9 @@ import { AuthService } from '../../../core/services/auth.service';
 
     .sidenav-header {
       padding: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
     }
 
     .logo {
@@ -269,10 +303,103 @@ import { AuthService } from '../../../core/services/auth.service';
     ::ng-deep .user-menu {
       min-width: 200px !important;
     }
+
+    /* Mobile Header */
+    .mobile-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .mobile-header button {
+      color: white;
+    }
+
+    .mobile-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .mobile-logo mat-icon {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 6px;
+      border-radius: 8px;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .mobile-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .close-sidenav {
+      color: white;
+    }
+
+    /* Tablet adjustments */
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .sidenav {
+        width: 240px;
+      }
+
+      .logo-text {
+        font-size: 18px;
+      }
+
+      .nav-item {
+        padding: 12px 14px;
+      }
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+      .sidenav {
+        width: 280px;
+      }
+    }
   `]
 })
 export class LayoutComponent {
-  constructor(public authService: AuthService) {}
+  @ViewChild('sidenav') sidenav!: MatSidenav;
+  isMobile = signal(window.innerWidth <= 768);
+
+  constructor(public authService: AuthService) {
+    this.checkScreenSize();
+  }
+
+  @HostListener('window:resize')
+  onResize() {
+    this.checkScreenSize();
+  }
+
+  private checkScreenSize(): void {
+    this.isMobile.set(window.innerWidth <= 768);
+  }
+
+  onNavClick(): void {
+    if (this.isMobile()) {
+      this.sidenav?.close();
+    }
+  }
 
   getUserInitials(): string {
     const user = this.authService.currentUser();

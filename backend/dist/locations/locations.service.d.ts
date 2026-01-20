@@ -13,5 +13,10 @@ export declare class LocationsService {
     getCitiesByCountry(countryId: number): Promise<City[]>;
     getCityById(id: number): Promise<City>;
     searchCities(query: string): Promise<City[]>;
+    searchCountries(query: string): Promise<Country[]>;
+    searchLocations(query: string): Promise<{
+        countries: Country[];
+        cities: City[];
+    }>;
     createCity(name: string, countryId: number, latitude?: number, longitude?: number): Promise<City>;
 }

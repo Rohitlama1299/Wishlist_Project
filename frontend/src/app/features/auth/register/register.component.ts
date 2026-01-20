@@ -160,6 +160,34 @@ import { AuthService } from '../../../core/services/auth.service';
     .auth-link a:hover {
       text-decoration: underline;
     }
+
+    /* Mobile */
+    @media (max-width: 480px) {
+      .auth-container {
+        padding: 16px;
+      }
+
+      .auth-card {
+        padding: 16px;
+      }
+
+      mat-card-title {
+        font-size: 20px !important;
+      }
+
+      mat-card-subtitle {
+        font-size: 14px;
+      }
+
+      .name-row {
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .submit-btn {
+        height: 44px;
+      }
+    }
   `]
 })
 export class RegisterComponent {

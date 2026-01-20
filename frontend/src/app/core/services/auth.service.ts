@@ -55,6 +55,15 @@ export class AuthService {
     );
   }
 
+  updateProfile(data: { firstName?: string; lastName?: string; profilePicture?: string }): Observable<User> {
+    return this.http.patch<User>(`${this.apiUrl}/profile`, data).pipe(
+      tap(user => {
+        this.currentUserSignal.set(user);
+        localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+      })
+    );
+  }
+
   private handleAuthResponse(response: AuthResponse): void {
     localStorage.setItem(this.TOKEN_KEY, response.accessToken);
     localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));

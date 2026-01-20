@@ -7,9 +7,19 @@ const app_module_1 = require("./app.module");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     const configService = app.get(config_1.ConfigService);
+    const isProduction = configService.get('NODE_ENV') === 'production';
+    const frontendUrl = configService.get('FRONTEND_URL', '')?.trim();
+    const allowedOrigins = isProduction
+        ? [
+            frontendUrl,
+            'https://wishlist-project-liard.vercel.app',
+        ].filter(Boolean)
+        : ['http://localhost:4200', 'http://localhost:3000'];
+    console.log('CORS allowed origins:', allowedOrigins);
     app.enableCors({
-        origin: ['http://localhost:4200', 'http://localhost:3000'],
+        origin: allowedOrigins,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
         credentials: true,
     });
     app.useGlobalPipes(new common_1.ValidationPipe({
@@ -22,8 +32,9 @@ async function bootstrap() {
     }));
     app.setGlobalPrefix('api');
     const port = configService.get('PORT', 3000);
-    await app.listen(port);
-    console.log(`Application is running on: http://localhost:${port}/api`);
+    await app.listen(port, '0.0.0.0');
+    console.log(`Application is running on port ${port}`);
+    console.log(`Environment: ${isProduction ? 'production' : 'development'}`);
 }
 bootstrap();
 //# sourceMappingURL=main.js.map

@@ -15,4 +15,9 @@ export declare class AuthService {
         user: Partial<User>;
     }>;
     validateUser(userId: string): Promise<User | null>;
+    updateProfile(userId: string, updateData: {
+        firstName?: string;
+        lastName?: string;
+        profilePicture?: string;
+    }): Promise<Partial<User>>;
 }

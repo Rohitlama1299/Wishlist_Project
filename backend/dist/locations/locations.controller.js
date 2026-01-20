@@ -40,6 +40,9 @@ let LocationsController = class LocationsController {
     getCitiesByCountry(id) {
         return this.locationsService.getCitiesByCountry(id);
     }
+    searchLocations(query) {
+        return this.locationsService.searchLocations(query || '');
+    }
     searchCities(query) {
         return this.locationsService.searchCities(query || '');
     }
@@ -91,6 +94,13 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", void 0)
 ], LocationsController.prototype, "getCitiesByCountry", null);
+__decorate([
+    (0, common_1.Get)('search'),
+    __param(0, (0, common_1.Query)('q')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], LocationsController.prototype, "searchLocations", null);
 __decorate([
     (0, common_1.Get)('cities/search'),
     __param(0, (0, common_1.Query)('q')),

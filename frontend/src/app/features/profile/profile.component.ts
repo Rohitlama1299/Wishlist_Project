@@ -512,9 +512,25 @@ import { User, DestinationStats } from '../../models';
       gap: 8px;
     }
 
+    /* Tablet */
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .profile-header {
+        padding: 40px 24px;
+      }
+
+      .profile-content {
+        padding: 0 24px 40px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Mobile */
     @media (max-width: 768px) {
       .profile-header {
-        padding: 32px 20px;
+        padding: 24px 16px;
       }
 
       .avatar-section {
@@ -522,22 +538,127 @@ import { User, DestinationStats } from '../../models';
         text-align: center;
       }
 
+      .avatar-large {
+        width: 80px;
+        height: 80px;
+        font-size: 28px;
+      }
+
       .user-info h1 {
-        font-size: 24px;
+        font-size: 22px;
+      }
+
+      .email {
+        font-size: 14px;
+      }
+
+      .member-since {
+        font-size: 12px;
       }
 
       .profile-content {
-        padding: 0 20px 32px;
+        padding: 0 16px 24px;
+        margin-top: -20px;
+      }
+
+      .stats-section h2,
+      .continents-breakdown h2 {
+        font-size: 18px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .stat-card {
+        padding: 16px;
+      }
+
+      .stat-icon {
+        width: 50px;
+        height: 50px;
+      }
+
+      .stat-icon mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+
+      .stat-value {
+        font-size: 28px;
+      }
+
+      .stat-label {
+        font-size: 13px;
+      }
+
+      .continents-breakdown {
+        padding: 16px;
       }
 
       .form-row {
         grid-template-columns: 1fr;
       }
 
+      .edit-profile-card mat-card-header,
+      .edit-profile-card mat-card-content {
+        padding: 16px;
+      }
+
+      .edit-profile-card mat-card-title {
+        font-size: 16px;
+      }
+
+      .danger-zone mat-card-header,
+      .danger-zone mat-card-content {
+        padding: 16px;
+      }
+
       .action-item {
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
         text-align: center;
+      }
+
+      .action-item button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* Small mobile */
+    @media (max-width: 480px) {
+      .profile-header {
+        padding: 20px 12px;
+      }
+
+      .avatar-large {
+        width: 70px;
+        height: 70px;
+        font-size: 24px;
+      }
+
+      .user-info h1 {
+        font-size: 20px;
+      }
+
+      .profile-content {
+        padding: 0 12px 20px;
+      }
+
+      .stat-card {
+        padding: 14px;
+      }
+
+      .stat-value {
+        font-size: 24px;
+      }
+
+      .edit-profile-card,
+      .danger-zone {
+        border-radius: 12px !important;
       }
     }
   `]
@@ -571,9 +692,9 @@ export class ProfileComponent implements OnInit {
   }
 
   loadProfilePicture(): void {
-    const savedPicture = localStorage.getItem('profilePicture');
-    if (savedPicture) {
-      this.profilePicture.set(savedPicture);
+    const currentUser = this.authService.currentUser();
+    if (currentUser?.profilePicture) {
+      this.profilePicture.set(currentUser.profilePicture);
     }
   }
 
@@ -586,9 +707,9 @@ export class ProfileComponent implements OnInit {
     if (input.files && input.files[0]) {
       const file = input.files[0];
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        this.snackBar.open('Image too large. Max size is 5MB.', 'Close', { duration: 3000 });
+      // Validate file size (max 2MB for base64 storage)
+      if (file.size > 2 * 1024 * 1024) {
+        this.snackBar.open('Image too large. Max size is 2MB.', 'Close', { duration: 3000 });
         return;
       }
 
@@ -601,9 +722,20 @@ export class ProfileComponent implements OnInit {
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
-        this.profilePicture.set(result);
-        localStorage.setItem('profilePicture', result);
-        this.snackBar.open('Profile picture updated!', 'Close', { duration: 3000 });
+        this.saving.set(true);
+        this.authService.updateProfile({ profilePicture: result }).subscribe({
+          next: (user) => {
+            this.profilePicture.set(user.profilePicture || null);
+            this.user.set(user);
+            this.saving.set(false);
+            this.snackBar.open('Profile picture updated!', 'Close', { duration: 3000 });
+          },
+          error: (err) => {
+            this.saving.set(false);
+            this.snackBar.open('Failed to update profile picture.', 'Close', { duration: 3000 });
+            console.error('Profile picture update error:', err);
+          }
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -659,13 +791,20 @@ export class ProfileComponent implements OnInit {
     if (this.profileForm.invalid) return;
 
     this.saving.set(true);
-    // Note: The backend doesn't have an update profile endpoint yet,
-    // so we'll just show a success message for now
-    setTimeout(() => {
-      this.saving.set(false);
-      this.snackBar.open('Profile updated successfully!', 'Close', { duration: 3000 });
-      this.profileForm.markAsPristine();
-    }, 1000);
+    const { firstName, lastName } = this.profileForm.value;
+    this.authService.updateProfile({ firstName, lastName }).subscribe({
+      next: (user) => {
+        this.user.set(user);
+        this.saving.set(false);
+        this.snackBar.open('Profile updated successfully!', 'Close', { duration: 3000 });
+        this.profileForm.markAsPristine();
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.snackBar.open('Failed to update profile.', 'Close', { duration: 3000 });
+        console.error('Profile update error:', err);
+      }
+    });
   }
 
   logout(): void {
