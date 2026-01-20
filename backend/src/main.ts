@@ -10,13 +10,20 @@ async function bootstrap() {
   const isProduction = configService.get('NODE_ENV') === 'production';
 
   // Enable CORS for Angular frontend
+  const frontendUrl = configService.get('FRONTEND_URL', '')?.trim();
   const allowedOrigins = isProduction
-    ? [configService.get('FRONTEND_URL', 'https://wishlist-travel.vercel.app')]
+    ? [
+        frontendUrl,
+        'https://wishlist-project-liard.vercel.app',
+      ].filter(Boolean)
     : ['http://localhost:4200', 'http://localhost:3000'];
+
+  console.log('CORS allowed origins:', allowedOrigins);
 
   app.enableCors({
     origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
   });
 
