@@ -160,12 +160,12 @@ import { Destination, DestinationStats, CountryDetail } from '../../models';
             </section>
           }
 
-          @if (getCountryCount() > 0) {
+          @if (countryDetails().length > 0) {
             <section class="countries-section">
               <h2>Your Countries</h2>
               <p class="section-subtitle">Click on a country to see your cities</p>
               <div class="country-cards">
-                @for (country of stats()?.countryDetails || []; track country.id) {
+                @for (country of countryDetails(); track country.id) {
                   <div class="country-item" (click)="openCountryModal(country)">
                     <div class="country-flag">{{ getFlag(country.code) }}</div>
                     <div class="country-info">
@@ -985,6 +985,8 @@ export class DashboardComponent implements OnInit {
   loading = signal(true);
   stats = signal<DestinationStats | null>(null);
   recentDestinations = signal<Destination[]>([]);
+  allDestinations = signal<Destination[]>([]);
+  countryDetails = signal<CountryDetail[]>([]);
   selectedCountry = signal<CountryDetail | null>(null);
 
   constructor(
@@ -1004,11 +1006,48 @@ export class DashboardComponent implements OnInit {
 
     this.destinationsService.getDestinations().subscribe({
       next: (destinations) => {
+        this.allDestinations.set(destinations);
         this.recentDestinations.set(destinations.slice(0, 6));
+        this.computeCountryDetails(destinations);
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
     });
+  }
+
+  computeCountryDetails(destinations: Destination[]): void {
+    const countryMap = new Map<number, CountryDetail>();
+
+    for (const dest of destinations) {
+      const country = dest.city?.country;
+      if (!country) continue;
+
+      if (!countryMap.has(country.id)) {
+        countryMap.set(country.id, {
+          id: country.id,
+          name: country.name,
+          code: country.code || '',
+          continentName: country.continent?.name || 'Unknown',
+          cityCount: 0,
+          cities: []
+        });
+      }
+
+      const countryDetail = countryMap.get(country.id)!;
+      countryDetail.cityCount += 1;
+      if (dest.city) {
+        countryDetail.cities.push({
+          id: dest.city.id,
+          name: dest.city.name,
+          imageUrl: dest.city.imageUrl,
+          destinationId: dest.id,
+          visited: dest.visited
+        });
+      }
+    }
+
+    const sorted = Array.from(countryMap.values()).sort((a, b) => b.cityCount - a.cityCount);
+    this.countryDetails.set(sorted);
   }
 
   getContinentCount(): number {
@@ -1046,7 +1085,7 @@ export class DashboardComponent implements OnInit {
 
   // Country methods
   getCountryCount(): number {
-    return this.stats()?.countryDetails?.length || 0;
+    return this.countryDetails().length;
   }
 
   getFlag(code: string): string {

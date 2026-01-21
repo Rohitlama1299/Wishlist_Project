@@ -855,16 +855,45 @@ export class DestinationsListComponent implements OnInit {
   setViewMode(mode: 'all' | 'countries'): void {
     this.viewMode.set(mode);
     if (mode === 'countries') {
-      this.loadCountryDetails();
+      this.computeCountryDetails();
     }
   }
 
-  loadCountryDetails(): void {
-    this.destinationsService.getStats().subscribe({
-      next: (stats) => {
-        this.countryDetails.set(stats.countryDetails || []);
+  computeCountryDetails(): void {
+    const destinations = this.destinations();
+    const countryMap = new Map<number, CountryDetail>();
+
+    for (const dest of destinations) {
+      const country = dest.city?.country;
+      if (!country) continue;
+
+      if (!countryMap.has(country.id)) {
+        countryMap.set(country.id, {
+          id: country.id,
+          name: country.name,
+          code: country.code || '',
+          continentName: country.continent?.name || 'Unknown',
+          cityCount: 0,
+          cities: []
+        });
       }
-    });
+
+      const countryDetail = countryMap.get(country.id)!;
+      countryDetail.cityCount += 1;
+      if (dest.city) {
+        countryDetail.cities.push({
+          id: dest.city.id,
+          name: dest.city.name,
+          imageUrl: dest.city.imageUrl,
+          destinationId: dest.id,
+          visited: dest.visited
+        });
+      }
+    }
+
+    // Sort by city count descending
+    const sorted = Array.from(countryMap.values()).sort((a, b) => b.cityCount - a.cityCount);
+    this.countryDetails.set(sorted);
   }
 
   // Country modal methods
