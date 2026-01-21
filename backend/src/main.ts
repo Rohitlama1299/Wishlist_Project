@@ -14,6 +14,8 @@ async function bootstrap() {
   const allowedOrigins = isProduction
     ? [
         frontendUrl,
+        'https://dreammap.world',
+        'https://www.dreammap.world',
         'https://wishlist-project-liard.vercel.app',
       ].filter(Boolean)
     : ['http://localhost:4200', 'http://localhost:3000'];
