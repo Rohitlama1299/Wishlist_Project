@@ -807,23 +807,39 @@ async function seed() {
     }
     console.log(`Seeded ${countryMap.size} countries`);
 
-    // Seed cities with images
+    // Seed cities with images (update existing or create new)
     let cityCount = 0;
+    let updatedCount = 0;
     for (const cityData of citiesData) {
       const country = countryMap.get(cityData.country);
       if (country) {
-        const city = cityRepo.create({
-          name: cityData.name,
-          countryId: country.id,
-          latitude: cityData.lat,
-          longitude: cityData.lng,
-          imageUrl: cityImages[cityData.name] || undefined,
+        // Check if city already exists
+        let city = await cityRepo.findOne({
+          where: { name: cityData.name, countryId: country.id }
         });
-        await cityRepo.save(city);
-        cityCount++;
+
+        if (city) {
+          // Update existing city with imageUrl
+          city.imageUrl = cityImages[cityData.name] || city.imageUrl;
+          city.latitude = cityData.lat;
+          city.longitude = cityData.lng;
+          await cityRepo.save(city);
+          updatedCount++;
+        } else {
+          // Create new city
+          city = cityRepo.create({
+            name: cityData.name,
+            countryId: country.id,
+            latitude: cityData.lat,
+            longitude: cityData.lng,
+            imageUrl: cityImages[cityData.name] || undefined,
+          });
+          await cityRepo.save(city);
+          cityCount++;
+        }
       }
     }
-    console.log(`Seeded ${cityCount} cities`);
+    console.log(`Seeded ${cityCount} new cities, updated ${updatedCount} existing cities`);
 
     console.log('Seeding completed successfully!');
     await dataSource.destroy();
