@@ -67,10 +67,28 @@ export interface CreateActivityRequest {
   currency?: string;
 }
 
+export interface CountryCity {
+  id: number;
+  name: string;
+  imageUrl?: string;
+  destinationId: string;
+  visited: boolean;
+}
+
+export interface CountryDetail {
+  id: number;
+  name: string;
+  code: string;
+  continentName: string;
+  cityCount: number;
+  cities: CountryCity[];
+}
+
 export interface DestinationStats {
   totalDestinations: number;
   visitedCount: number;
   pendingCount: number;
   continentStats: Record<string, number>;
   countryStats: Record<string, number>;
+  countryDetails: CountryDetail[];
 }

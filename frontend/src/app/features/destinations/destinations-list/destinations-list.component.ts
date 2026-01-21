@@ -12,7 +12,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DestinationsService } from '../../../core/services/destinations.service';
-import { Destination } from '../../../models';
+import { Destination, CountryDetail } from '../../../models';
 
 @Component({
   selector: 'app-destinations-list',
@@ -44,7 +44,19 @@ import { Destination } from '../../../models';
         </button>
       </header>
 
-      <div class="filters">
+      <!-- View Toggle -->
+      <div class="view-toggle">
+        <button mat-button [class.active]="viewMode() === 'all'" (click)="setViewMode('all')">
+          <mat-icon>view_module</mat-icon>
+          All Destinations
+        </button>
+        <button mat-button [class.active]="viewMode() === 'countries'" (click)="setViewMode('countries')">
+          <mat-icon>flag</mat-icon>
+          By Country
+        </button>
+      </div>
+
+      <div class="filters" [class.hidden]="viewMode() === 'countries'">
         <mat-form-field appearance="outline" class="search-field">
           <mat-label>Search destinations</mat-label>
           <input matInput [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" placeholder="Search...">
@@ -92,7 +104,7 @@ import { Destination } from '../../../models';
             }
           </mat-card-content>
         </mat-card>
-      } @else {
+      } @else if (viewMode() === 'all') {
         <div class="destinations-grid">
           @for (dest of filteredDestinations(); track dest.id) {
             <mat-card class="destination-card">
@@ -132,6 +144,64 @@ import { Destination } from '../../../models';
               </mat-card-content>
             </mat-card>
           }
+        </div>
+      } @else {
+        <!-- Countries View -->
+        <div class="countries-view">
+          <p class="countries-subtitle">Click on a country to see your cities</p>
+          <div class="country-cards">
+            @for (country of countryDetails(); track country.id) {
+              <div class="country-item" (click)="openCountryModal(country)">
+                <div class="country-flag">{{ getFlag(country.code) }}</div>
+                <div class="country-info">
+                  <span class="country-name">{{ country.name }}</span>
+                  <span class="country-meta">{{ country.continentName }}</span>
+                </div>
+                <div class="country-badge">{{ country.cityCount }} {{ country.cityCount === 1 ? 'city' : 'cities' }}</div>
+                <mat-icon class="arrow-icon">chevron_right</mat-icon>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Country Cities Modal -->
+      @if (selectedCountry()) {
+        <div class="modal-overlay" (click)="closeCountryModal()">
+          <div class="country-modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <div class="modal-title">
+                <span class="modal-flag">{{ getFlag(selectedCountry()!.code) }}</span>
+                <div>
+                  <h3>{{ selectedCountry()!.name }}</h3>
+                  <span class="modal-subtitle">{{ selectedCountry()!.cityCount }} {{ selectedCountry()!.cityCount === 1 ? 'city' : 'cities' }} in your list</span>
+                </div>
+              </div>
+              <button mat-icon-button (click)="closeCountryModal()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+            <div class="modal-content">
+              <div class="cities-list">
+                @for (city of selectedCountry()!.cities; track city.id) {
+                  <div class="city-item" [routerLink]="['/destinations', city.destinationId]" (click)="closeCountryModal()">
+                    <div class="city-image" [style.background-image]="'url(' + (city.imageUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400') + ')'">
+                      @if (city.visited) {
+                        <div class="city-visited-badge">
+                          <mat-icon>check</mat-icon>
+                        </div>
+                      }
+                    </div>
+                    <div class="city-info">
+                      <span class="city-name">{{ city.name }}</span>
+                      <span class="city-status">{{ city.visited ? 'Visited' : 'On Wishlist' }}</span>
+                    </div>
+                    <mat-icon class="arrow-icon">chevron_right</mat-icon>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
         </div>
       }
     </div>
@@ -297,6 +367,241 @@ import { Destination } from '../../../models';
       margin: 0 0 24px;
     }
 
+    /* View Toggle */
+    .view-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      padding: 4px;
+      background: #f0f0f0;
+      border-radius: 12px;
+      width: fit-content;
+    }
+
+    .view-toggle button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+
+    .view-toggle button.active {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      color: #667eea;
+    }
+
+    .view-toggle button mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .filters.hidden {
+      display: none;
+    }
+
+    /* Countries View */
+    .countries-view {
+      margin-top: 16px;
+    }
+
+    .countries-subtitle {
+      color: #888;
+      font-size: 14px;
+      margin: 0 0 20px;
+    }
+
+    .country-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 12px;
+    }
+
+    .country-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: white;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .country-item:hover {
+      background: #f8f9ff;
+      transform: translateX(4px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
+    .country-flag {
+      font-size: 36px;
+      line-height: 1;
+    }
+
+    .country-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .country-name {
+      font-weight: 600;
+      color: #1a1a2e;
+      font-size: 16px;
+    }
+
+    .country-meta {
+      color: #888;
+      font-size: 13px;
+    }
+
+    .country-badge {
+      background: #667eea;
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .arrow-icon {
+      color: #ccc;
+    }
+
+    /* Country Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 24px;
+    }
+
+    .country-modal {
+      background: white;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow: hidden;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .modal-title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .modal-flag {
+      font-size: 48px;
+      line-height: 1;
+    }
+
+    .modal-title h3 {
+      margin: 0;
+      font-size: 20px;
+      color: #1a1a2e;
+    }
+
+    .modal-subtitle {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .modal-content {
+      padding: 16px 24px 24px;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    .cities-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .city-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px;
+      background: #f8f9ff;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .city-item:hover {
+      background: #f0f2ff;
+      transform: translateX(4px);
+    }
+
+    .city-image {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      background-size: cover;
+      background-position: center;
+      background-color: #e8e8e8;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .city-visited-badge {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+    }
+
+    .city-visited-badge mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      color: white;
+    }
+
+    .city-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .city-name {
+      font-weight: 600;
+      color: #1a1a2e;
+      font-size: 15px;
+    }
+
+    .city-status {
+      color: #888;
+      font-size: 13px;
+    }
+
     /* Tablet */
     @media (max-width: 1024px) and (min-width: 769px) {
       .destinations-container {
@@ -336,6 +641,16 @@ import { Destination } from '../../../models';
         width: 100%;
       }
 
+      .view-toggle {
+        width: 100%;
+      }
+
+      .view-toggle button {
+        flex: 1;
+        justify-content: center;
+        padding: 10px 12px;
+      }
+
       .filters {
         flex-direction: column;
         gap: 12px;
@@ -360,6 +675,40 @@ import { Destination } from '../../../models';
 
       mat-card-content h3 {
         font-size: 16px;
+      }
+
+      .country-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .country-flag {
+        font-size: 32px;
+      }
+
+      .modal-overlay {
+        padding: 16px;
+        align-items: flex-end;
+      }
+
+      .country-modal {
+        border-radius: 20px 20px 0 0;
+        max-height: 85vh;
+      }
+
+      .modal-header {
+        padding: 20px;
+      }
+
+      .modal-flag {
+        font-size: 40px;
+      }
+
+      .modal-title h3 {
+        font-size: 18px;
+      }
+
+      .modal-content {
+        padding: 12px 20px 20px;
       }
 
       .empty-state {
@@ -398,6 +747,9 @@ export class DestinationsListComponent implements OnInit {
   loading = signal(true);
   destinations = signal<Destination[]>([]);
   filteredDestinations = signal<Destination[]>([]);
+  countryDetails = signal<CountryDetail[]>([]);
+  selectedCountry = signal<CountryDetail | null>(null);
+  viewMode = signal<'all' | 'countries'>('all');
 
   searchQuery = '';
   statusFilter = 'all';
@@ -490,9 +842,46 @@ export class DestinationsListComponent implements OnInit {
   }
 
   getDestinationImage(dest: Destination): string {
-    if (dest.photos && dest.photos.length > 0) {
-      return dest.photos[0].url;
+    // Use city imageUrl from backend
+    if (dest.city?.imageUrl) {
+      return dest.city.imageUrl;
     }
-    return 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400';
+
+    // Default travel image
+    return 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600';
+  }
+
+  // View mode methods
+  setViewMode(mode: 'all' | 'countries'): void {
+    this.viewMode.set(mode);
+    if (mode === 'countries') {
+      this.loadCountryDetails();
+    }
+  }
+
+  loadCountryDetails(): void {
+    this.destinationsService.getStats().subscribe({
+      next: (stats) => {
+        this.countryDetails.set(stats.countryDetails || []);
+      }
+    });
+  }
+
+  // Country modal methods
+  openCountryModal(country: CountryDetail): void {
+    this.selectedCountry.set(country);
+  }
+
+  closeCountryModal(): void {
+    this.selectedCountry.set(null);
+  }
+
+  getFlag(code: string): string {
+    if (!code) return '';
+    const codePoints = code
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
   }
 }

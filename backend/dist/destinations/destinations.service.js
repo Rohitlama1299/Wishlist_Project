@@ -121,12 +121,39 @@ let DestinationsService = class DestinationsService {
             acc[countryName] = (acc[countryName] || 0) + 1;
             return acc;
         }, {});
+        const countryDetails = destinations.reduce((acc, dest) => {
+            const country = dest.city?.country;
+            if (!country)
+                return acc;
+            if (!acc[country.id]) {
+                acc[country.id] = {
+                    id: country.id,
+                    name: country.name,
+                    code: country.code,
+                    continentName: country.continent?.name || 'Unknown',
+                    cityCount: 0,
+                    cities: [],
+                };
+            }
+            acc[country.id].cityCount += 1;
+            if (dest.city) {
+                acc[country.id].cities.push({
+                    id: dest.city.id,
+                    name: dest.city.name,
+                    imageUrl: dest.city.imageUrl,
+                    destinationId: dest.id,
+                    visited: dest.visited,
+                });
+            }
+            return acc;
+        }, {});
         return {
             totalDestinations,
             visitedCount,
             pendingCount,
             continentStats,
             countryStats,
+            countryDetails: Object.values(countryDetails).sort((a, b) => b.cityCount - a.cityCount),
         };
     }
 };

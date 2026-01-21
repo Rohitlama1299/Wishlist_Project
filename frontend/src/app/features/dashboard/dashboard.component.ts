@@ -8,7 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { AuthService } from '../../core/services/auth.service';
 import { DestinationsService } from '../../core/services/destinations.service';
-import { Destination, DestinationStats } from '../../models';
+import { Destination, DestinationStats, CountryDetail } from '../../models';
 
 @Component({
   selector: 'app-dashboard',
@@ -158,6 +158,65 @@ import { Destination, DestinationStats } from '../../models';
                 }
               </div>
             </section>
+          }
+
+          @if (getCountryCount() > 0) {
+            <section class="countries-section">
+              <h2>Your Countries</h2>
+              <p class="section-subtitle">Click on a country to see your cities</p>
+              <div class="country-cards">
+                @for (country of stats()?.countryDetails || []; track country.id) {
+                  <div class="country-item" (click)="openCountryModal(country)">
+                    <div class="country-flag">{{ getFlag(country.code) }}</div>
+                    <div class="country-info">
+                      <span class="country-name">{{ country.name }}</span>
+                      <span class="country-count">{{ country.cityCount }} {{ country.cityCount === 1 ? 'city' : 'cities' }}</span>
+                    </div>
+                    <mat-icon class="arrow-icon">chevron_right</mat-icon>
+                  </div>
+                }
+              </div>
+            </section>
+          }
+
+          <!-- Country Cities Modal -->
+          @if (selectedCountry()) {
+            <div class="modal-overlay" (click)="closeCountryModal()">
+              <div class="country-modal" (click)="$event.stopPropagation()">
+                <div class="modal-header">
+                  <div class="modal-title">
+                    <span class="modal-flag">{{ getFlag(selectedCountry()!.code) }}</span>
+                    <div>
+                      <h3>{{ selectedCountry()!.name }}</h3>
+                      <span class="modal-subtitle">{{ selectedCountry()!.cityCount }} {{ selectedCountry()!.cityCount === 1 ? 'city' : 'cities' }} in your list</span>
+                    </div>
+                  </div>
+                  <button mat-icon-button (click)="closeCountryModal()">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+                <div class="modal-content">
+                  <div class="cities-list">
+                    @for (city of selectedCountry()!.cities; track city.id) {
+                      <div class="city-item" [routerLink]="['/destinations', city.destinationId]" (click)="closeCountryModal()">
+                        <div class="city-image" [style.background-image]="'url(' + (city.imageUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400') + ')'">
+                          @if (city.visited) {
+                            <div class="city-visited-badge">
+                              <mat-icon>check</mat-icon>
+                            </div>
+                          }
+                        </div>
+                        <div class="city-info">
+                          <span class="city-name">{{ city.name }}</span>
+                          <span class="city-status">{{ city.visited ? 'Visited' : 'On Wishlist' }}</span>
+                        </div>
+                        <mat-icon class="arrow-icon">chevron_right</mat-icon>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
           }
         } @else {
           <mat-card class="empty-state">
@@ -547,6 +606,204 @@ import { Destination, DestinationStats } from '../../models';
       font-size: 13px;
     }
 
+    /* Countries Section */
+    .countries-section {
+      background: white;
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      margin-top: 24px;
+    }
+
+    .countries-section h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      color: #1a1a2e;
+    }
+
+    .section-subtitle {
+      margin: 0 0 20px;
+      color: #888;
+      font-size: 14px;
+    }
+
+    .country-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .country-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: #f8f9ff;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .country-item:hover {
+      background: #f0f2ff;
+      transform: translateX(4px);
+    }
+
+    .country-flag {
+      font-size: 36px;
+      line-height: 1;
+    }
+
+    .country-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .country-name {
+      font-weight: 600;
+      color: #1a1a2e;
+      font-size: 15px;
+    }
+
+    .country-count {
+      color: #667eea;
+      font-size: 13px;
+    }
+
+    .arrow-icon {
+      color: #ccc;
+    }
+
+    /* Country Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 24px;
+    }
+
+    .country-modal {
+      background: white;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow: hidden;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .modal-title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .modal-flag {
+      font-size: 48px;
+      line-height: 1;
+    }
+
+    .modal-title h3 {
+      margin: 0;
+      font-size: 20px;
+      color: #1a1a2e;
+    }
+
+    .modal-subtitle {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .modal-content {
+      padding: 16px 24px 24px;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    .cities-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .city-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px;
+      background: #f8f9ff;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .city-item:hover {
+      background: #f0f2ff;
+      transform: translateX(4px);
+    }
+
+    .city-image {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      background-size: cover;
+      background-position: center;
+      background-color: #e8e8e8;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .city-visited-badge {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+    }
+
+    .city-visited-badge mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      color: white;
+    }
+
+    .city-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .city-name {
+      font-weight: 600;
+      color: #1a1a2e;
+      font-size: 15px;
+    }
+
+    .city-status {
+      color: #888;
+      font-size: 13px;
+    }
+
     /* Tablet */
     @media (max-width: 1024px) and (min-width: 769px) {
       .dashboard-container {
@@ -562,6 +819,10 @@ import { Destination, DestinationStats } from '../../models';
       }
 
       .continent-cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .country-cards {
         grid-template-columns: repeat(2, 1fr);
       }
     }
@@ -637,6 +898,44 @@ import { Destination, DestinationStats } from '../../models';
         grid-template-columns: 1fr;
       }
 
+      .countries-section {
+        padding: 20px;
+      }
+
+      .country-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .country-flag {
+        font-size: 32px;
+      }
+
+      .modal-overlay {
+        padding: 16px;
+        align-items: flex-end;
+      }
+
+      .country-modal {
+        border-radius: 20px 20px 0 0;
+        max-height: 85vh;
+      }
+
+      .modal-header {
+        padding: 20px;
+      }
+
+      .modal-flag {
+        font-size: 40px;
+      }
+
+      .modal-title h3 {
+        font-size: 18px;
+      }
+
+      .modal-content {
+        padding: 12px 20px 20px;
+      }
+
       .empty-state {
         padding: 40px 20px;
       }
@@ -686,6 +985,7 @@ export class DashboardComponent implements OnInit {
   loading = signal(true);
   stats = signal<DestinationStats | null>(null);
   recentDestinations = signal<Destination[]>([]);
+  selectedCountry = signal<CountryDetail | null>(null);
 
   constructor(
     public authService: AuthService,
@@ -737,6 +1037,32 @@ export class DashboardComponent implements OnInit {
     if (dest.photos && dest.photos.length > 0) {
       return dest.photos[0].url;
     }
+    // Use city image from backend
+    if (dest.city?.imageUrl) {
+      return dest.city.imageUrl;
+    }
     return 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400';
+  }
+
+  // Country methods
+  getCountryCount(): number {
+    return this.stats()?.countryDetails?.length || 0;
+  }
+
+  getFlag(code: string): string {
+    if (!code) return '';
+    const codePoints = code
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  }
+
+  openCountryModal(country: CountryDetail): void {
+    this.selectedCountry.set(country);
+  }
+
+  closeCountryModal(): void {
+    this.selectedCountry.set(null);
   }
 }

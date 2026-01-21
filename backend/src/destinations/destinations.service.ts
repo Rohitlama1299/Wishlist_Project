@@ -140,6 +140,7 @@ export class DestinationsService {
       {} as Record<string, number>,
     );
 
+    // Simple country stats (for backward compatibility)
     const countryStats = destinations.reduce(
       (acc, dest) => {
         const countryName = dest.city?.country?.name || 'Unknown';
@@ -149,12 +150,59 @@ export class DestinationsService {
       {} as Record<string, number>,
     );
 
+    // Detailed country stats with country info and cities
+    const countryDetails = destinations.reduce(
+      (acc, dest) => {
+        const country = dest.city?.country;
+        if (!country) return acc;
+
+        if (!acc[country.id]) {
+          acc[country.id] = {
+            id: country.id,
+            name: country.name,
+            code: country.code,
+            continentName: country.continent?.name || 'Unknown',
+            cityCount: 0,
+            cities: [],
+          };
+        }
+
+        acc[country.id].cityCount += 1;
+        if (dest.city) {
+          acc[country.id].cities.push({
+            id: dest.city.id,
+            name: dest.city.name,
+            imageUrl: dest.city.imageUrl,
+            destinationId: dest.id,
+            visited: dest.visited,
+          });
+        }
+
+        return acc;
+      },
+      {} as Record<number, {
+        id: number;
+        name: string;
+        code: string;
+        continentName: string;
+        cityCount: number;
+        cities: Array<{
+          id: number;
+          name: string;
+          imageUrl?: string;
+          destinationId: string;
+          visited: boolean;
+        }>;
+      }>,
+    );
+
     return {
       totalDestinations,
       visitedCount,
       pendingCount,
       continentStats,
       countryStats,
+      countryDetails: Object.values(countryDetails).sort((a, b) => b.cityCount - a.cityCount),
     };
   }
 }

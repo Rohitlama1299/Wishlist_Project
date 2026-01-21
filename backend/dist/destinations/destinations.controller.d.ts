@@ -12,6 +12,20 @@ export declare class DestinationsController {
         pendingCount: number;
         continentStats: Record<string, number>;
         countryStats: Record<string, number>;
+        countryDetails: {
+            id: number;
+            name: string;
+            code: string;
+            continentName: string;
+            cityCount: number;
+            cities: {
+                id: number;
+                name: string;
+                imageUrl?: string;
+                destinationId: string;
+                visited: boolean;
+            }[];
+        }[];
     }>;
     findByContinent(user: User, continentId: number): Promise<import("../entities").Destination[]>;
     findByCountry(user: User, countryId: number): Promise<import("../entities").Destination[]>;

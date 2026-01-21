@@ -18,5 +18,19 @@ export declare class DestinationsService {
         pendingCount: number;
         continentStats: Record<string, number>;
         countryStats: Record<string, number>;
+        countryDetails: {
+            id: number;
+            name: string;
+            code: string;
+            continentName: string;
+            cityCount: number;
+            cities: Array<{
+                id: number;
+                name: string;
+                imageUrl?: string;
+                destinationId: string;
+                visited: boolean;
+            }>;
+        }[];
     }>;
 }
