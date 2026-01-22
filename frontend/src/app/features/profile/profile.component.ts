@@ -296,6 +296,7 @@ import { User, DestinationStats } from '../../models';
     }
 
     .stats-section {
+      margin-top: 48px;
       margin-bottom: 32px;
     }
 
@@ -587,6 +588,10 @@ import { User, DestinationStats } from '../../models';
         margin-top: -20px;
       }
 
+      .stats-section {
+        margin-top: 32px;
+      }
+
       .stats-section h2,
       .continents-breakdown h2 {
         font-size: 16px;
@@ -694,6 +699,10 @@ import { User, DestinationStats } from '../../models';
 
       .profile-content {
         padding: 0 12px 20px;
+      }
+
+      .stats-section {
+        margin-top: 24px;
       }
 
       .stats-grid {
