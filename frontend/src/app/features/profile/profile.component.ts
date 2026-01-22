@@ -311,34 +311,34 @@ import { User, DestinationStats } from '../../models';
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 20px;
     }
 
     .stat-card {
       border-radius: 16px !important;
       padding: 24px;
-    }
-
-    .stat-card {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 16px;
+      margin: 0;
     }
 
     .stat-icon {
-      width: 60px;
-      height: 60px;
-      border-radius: 16px;
+      width: 56px;
+      height: 56px;
+      min-width: 56px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
     }
 
     .stat-icon mat-icon {
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
+      font-size: 26px;
+      width: 26px;
+      height: 26px;
       color: white;
     }
 
@@ -350,19 +350,24 @@ import { User, DestinationStats } from '../../models';
     .stat-info {
       display: flex;
       flex-direction: column;
+      justify-content: center;
+      min-width: 0;
     }
 
     .stat-value {
-      font-size: 36px;
+      font-size: 32px;
       font-weight: 700;
       color: #1a1a2e;
-      line-height: 1.1;
+      line-height: 1.2;
     }
 
     .stat-label {
       color: #666;
-      font-size: 14px;
-      margin-top: 4px;
+      font-size: 13px;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .continents-breakdown {
@@ -600,31 +605,41 @@ import { User, DestinationStats } from '../../models';
       }
 
       .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
         gap: 12px;
       }
 
       .stat-card {
-        padding: 16px;
+        padding: 14px;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
       }
 
       .stat-icon {
-        width: 50px;
-        height: 50px;
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 12px;
       }
 
       .stat-icon mat-icon {
-        font-size: 24px;
-        width: 24px;
-        height: 24px;
+        font-size: 22px;
+        width: 22px;
+        height: 22px;
+      }
+
+      .stat-info {
+        align-items: center;
       }
 
       .stat-value {
-        font-size: 28px;
+        font-size: 24px;
       }
 
       .stat-label {
-        font-size: 13px;
+        font-size: 11px;
       }
 
       .continents-breakdown {
@@ -681,12 +696,33 @@ import { User, DestinationStats } from '../../models';
         padding: 0 12px 20px;
       }
 
+      .stats-grid {
+        gap: 10px;
+      }
+
       .stat-card {
-        padding: 14px;
+        padding: 12px;
+      }
+
+      .stat-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 10px;
+      }
+
+      .stat-icon mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
       }
 
       .stat-value {
-        font-size: 24px;
+        font-size: 20px;
+      }
+
+      .stat-label {
+        font-size: 10px;
       }
 
       .edit-profile-card,
