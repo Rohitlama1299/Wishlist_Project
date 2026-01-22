@@ -301,8 +301,12 @@ import { User, DestinationStats } from '../../models';
 
     .stats-section h2 {
       margin: 0 0 16px;
-      font-size: 20px;
+      font-size: 18px;
+      font-weight: 600;
       color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .stats-grid {
@@ -372,7 +376,11 @@ import { User, DestinationStats } from '../../models';
     .continents-breakdown h2 {
       margin: 0 0 20px;
       font-size: 18px;
+      font-weight: 600;
       color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .continent-bars {
@@ -429,13 +437,18 @@ import { User, DestinationStats } from '../../models';
     .edit-profile-card mat-card-title {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       font-size: 18px;
+      font-weight: 600;
       color: #1a1a2e;
+      margin: 0;
     }
 
     .edit-profile-card mat-card-title mat-icon {
       color: #667eea;
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
     }
 
     .edit-profile-card mat-card-content {
@@ -478,9 +491,17 @@ import { User, DestinationStats } from '../../models';
     .danger-zone mat-card-title {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       font-size: 18px;
+      font-weight: 600;
       color: #f44336;
+      margin: 0;
+    }
+
+    .danger-zone mat-card-title mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
     }
 
     .danger-zone mat-card-content {
@@ -563,7 +584,19 @@ import { User, DestinationStats } from '../../models';
 
       .stats-section h2,
       .continents-breakdown h2 {
-        font-size: 18px;
+        font-size: 16px;
+      }
+
+      .edit-profile-card mat-card-title,
+      .danger-zone mat-card-title {
+        font-size: 16px;
+      }
+
+      .edit-profile-card mat-card-title mat-icon,
+      .danger-zone mat-card-title mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
       }
 
       .stats-grid {
@@ -707,9 +740,9 @@ export class ProfileComponent implements OnInit {
     if (input.files && input.files[0]) {
       const file = input.files[0];
 
-      // Validate file size (max 2MB for base64 storage)
-      if (file.size > 2 * 1024 * 1024) {
-        this.snackBar.open('Image too large. Max size is 2MB.', 'Close', { duration: 3000 });
+      // Validate file size (max 10MB before compression)
+      if (file.size > 10 * 1024 * 1024) {
+        this.snackBar.open('Image too large. Max size is 10MB.', 'Close', { duration: 3000 });
         return;
       }
 
@@ -719,11 +752,9 @@ export class ProfileComponent implements OnInit {
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        this.saving.set(true);
-        this.authService.updateProfile({ profilePicture: result }).subscribe({
+      this.saving.set(true);
+      this.compressImage(file).then((compressedBase64) => {
+        this.authService.updateProfile({ profilePicture: compressedBase64 }).subscribe({
           next: (user) => {
             this.profilePicture.set(user.profilePicture || null);
             this.user.set(user);
@@ -736,9 +767,52 @@ export class ProfileComponent implements OnInit {
             console.error('Profile picture update error:', err);
           }
         });
-      };
-      reader.readAsDataURL(file);
+      }).catch(() => {
+        this.saving.set(false);
+        this.snackBar.open('Failed to process image.', 'Close', { duration: 3000 });
+      });
     }
+  }
+
+  private compressImage(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+
+          // Max dimensions for profile picture
+          const maxWidth = 400;
+          const maxHeight = 400;
+          let { width, height } = img;
+
+          // Calculate new dimensions maintaining aspect ratio
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG with 0.8 quality
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+          resolve(compressedBase64);
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
   }
 
   loadUserData(): void {

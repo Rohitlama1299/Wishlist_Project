@@ -69,8 +69,10 @@ import { AuthService } from '../../../core/services/auth.service';
 
         <div class="sidenav-footer">
           <div class="user-card" [matMenuTriggerFor]="userMenu">
-            <div class="user-avatar">
-              {{ getUserInitials() }}
+            <div class="user-avatar" [class.has-image]="authService.currentUser()?.profilePicture" [style.background-image]="authService.currentUser()?.profilePicture ? 'url(' + authService.currentUser()?.profilePicture + ')' : 'none'">
+              @if (!authService.currentUser()?.profilePicture) {
+                {{ getUserInitials() }}
+              }
             </div>
             <div class="user-details">
               <span class="user-name">{{ authService.currentUser()?.firstName }} {{ authService.currentUser()?.lastName }}</span>
@@ -104,8 +106,10 @@ import { AuthService } from '../../../core/services/auth.service';
               <mat-icon>flight_takeoff</mat-icon>
               <span>Wanderlust</span>
             </div>
-            <div class="mobile-avatar" [matMenuTriggerFor]="mobileUserMenu">
-              {{ getUserInitials() }}
+            <div class="mobile-avatar" [class.has-image]="authService.currentUser()?.profilePicture" [style.background-image]="authService.currentUser()?.profilePicture ? 'url(' + authService.currentUser()?.profilePicture + ')' : 'none'" [matMenuTriggerFor]="mobileUserMenu">
+              @if (!authService.currentUser()?.profilePicture) {
+                {{ getUserInitials() }}
+              }
             </div>
             <mat-menu #mobileUserMenu="matMenu">
               <button mat-menu-item routerLink="/profile">
@@ -257,12 +261,19 @@ import { AuthService } from '../../../core/services/auth.service';
       height: 42px;
       border-radius: 10px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-size: cover;
+      background-position: center;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 600;
       font-size: 15px;
       color: white;
+      flex-shrink: 0;
+    }
+
+    .user-avatar.has-image {
+      background-color: transparent;
     }
 
     .user-details {
@@ -343,12 +354,20 @@ import { AuthService } from '../../../core/services/auth.service';
       height: 36px;
       border-radius: 50%;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-size: cover;
+      background-position: center;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 600;
       font-size: 14px;
       cursor: pointer;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .mobile-avatar.has-image {
+      background-color: transparent;
     }
 
     .close-sidenav {
