@@ -344,9 +344,13 @@ import { AuthService } from '../../../core/services/auth.service';
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       padding: 6px;
       border-radius: 8px;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: content-box;
     }
 
     .mobile-avatar {
