@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -10,9 +10,25 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialogModule } from '@angular/material/dialog';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSelectModule } from '@angular/material/select';
 import { DestinationsService } from '../../../core/services/destinations.service';
-import { Destination, Photo } from '../../../models';
+import { Destination, Photo, Activity, CreateActivityRequest } from '../../../models';
 import { environment } from '../../../../environments/environment';
+import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loader/skeleton-loader.component';
+import { fadeInUp, cardStagger, backdropAnimation, dialogAnimation } from '../../../animations/route.animations';
+
+const ACTIVITY_CATEGORIES = [
+  { value: 'sightseeing', label: 'Sightseeing', icon: 'visibility' },
+  { value: 'food', label: 'Food & Dining', icon: 'restaurant' },
+  { value: 'adventure', label: 'Adventure', icon: 'hiking' },
+  { value: 'culture', label: 'Culture', icon: 'museum' },
+  { value: 'shopping', label: 'Shopping', icon: 'shopping_bag' },
+  { value: 'nightlife', label: 'Nightlife', icon: 'nightlife' },
+  { value: 'relaxation', label: 'Relaxation', icon: 'spa' },
+  { value: 'other', label: 'Other', icon: 'category' }
+];
 
 @Component({
   selector: 'app-destination-detail',
@@ -28,8 +44,13 @@ import { environment } from '../../../../environments/environment';
     MatProgressSpinnerModule,
     MatChipsModule,
     MatSnackBarModule,
-    MatDialogModule
+    MatDialogModule,
+    MatTabsModule,
+    MatCheckboxModule,
+    MatSelectModule,
+    SkeletonLoaderComponent
   ],
+  animations: [fadeInUp, cardStagger, backdropAnimation, dialogAnimation],
   template: `
     <div class="detail-container">
       @if (loading()) {
@@ -38,7 +59,7 @@ import { environment } from '../../../../environments/environment';
         </div>
       } @else if (destination()) {
         <!-- Hero Section with City Image -->
-        <div class="hero-section">
+        <div class="hero-section" @fadeInUp>
           <div class="hero-image" [style.backgroundImage]="'url(' + getCityImageUrl() + ')'">
             <div class="hero-overlay"></div>
             <div class="hero-content">
@@ -62,49 +83,159 @@ import { environment } from '../../../../environments/environment';
           </div>
         </div>
 
-        <!-- Bucket List Section -->
-        <section class="bucket-list-section">
-          <div class="section-header">
-            <h2>Bucket List</h2>
-            <button mat-raised-button color="primary" class="add-item-btn" (click)="openItemDialog()">
-              Add to List
+        <!-- Tabs Section -->
+        <div class="tabs-container" @fadeInUp>
+          <div class="tab-buttons">
+            <button class="tab-btn" [class.active]="activeTab() === 'bucket'" (click)="setActiveTab('bucket')">
+              <mat-icon>photo_library</mat-icon>
+              Bucket List
+              <span class="tab-count">{{ destination()!.photos?.length || 0 }}</span>
+            </button>
+            <button class="tab-btn" [class.active]="activeTab() === 'itinerary'" (click)="setActiveTab('itinerary')">
+              <mat-icon>checklist</mat-icon>
+              Itinerary
+              <span class="tab-count">{{ destination()!.activities?.length || 0 }}</span>
             </button>
           </div>
+        </div>
 
-          @if (destination()!.photos && destination()!.photos!.length > 0) {
-            <div class="postcards-grid">
-              @for (photo of destination()!.photos; track photo.id) {
-                <div class="postcard" (click)="openItemDialog(photo)">
-                  <div class="postcard-image">
-                    <img [src]="getPhotoUrl(photo)" [alt]="photo.caption || 'Bucket list item'">
-                  </div>
-                  <div class="postcard-content">
-                    @if (photo.caption) {
-                      <p class="postcard-note">{{ photo.caption }}</p>
-                    }
-                    <div class="postcard-footer">
-                      <span class="postcard-date">{{ photo.createdAt | date:'MMM d, yyyy' }}</span>
-                      <button mat-icon-button class="edit-btn" (click)="openItemDialog(photo); $event.stopPropagation()">
-                        <mat-icon>edit</mat-icon>
-                      </button>
+        <!-- Bucket List Section -->
+        @if (activeTab() === 'bucket') {
+          <section class="bucket-list-section" @fadeInUp>
+            <div class="section-header">
+              <h2>Bucket List</h2>
+              <button mat-raised-button color="primary" class="add-item-btn" (click)="openItemDialog()">
+                <mat-icon>add</mat-icon>
+                Add to List
+              </button>
+            </div>
+
+            @if (destination()!.photos && destination()!.photos!.length > 0) {
+              <div class="postcards-grid" [@cardStagger]="destination()!.photos!.length">
+                @for (photo of destination()!.photos; track photo.id) {
+                  <div class="postcard" (click)="openItemDialog(photo)">
+                    <div class="postcard-image">
+                      <img [src]="getPhotoUrl(photo)" [alt]="photo.caption || 'Bucket list item'">
                     </div>
+                    <div class="postcard-content">
+                      @if (photo.caption) {
+                        <p class="postcard-note">{{ photo.caption }}</p>
+                      }
+                      <div class="postcard-footer">
+                        <span class="postcard-date">{{ photo.createdAt | date:'MMM d, yyyy' }}</span>
+                        <button mat-icon-button class="edit-btn" (click)="openItemDialog(photo); $event.stopPropagation()">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>explore</mat-icon>
+                <h3>No bucket list items yet</h3>
+                <p>Add things you want to see and do!</p>
+              </div>
+            }
+          </section>
+        }
+
+        <!-- Itinerary Section -->
+        @if (activeTab() === 'itinerary') {
+          <section class="itinerary-section" @fadeInUp>
+            <div class="section-header">
+              <h2>Itinerary</h2>
+              <button mat-raised-button color="primary" class="add-item-btn" (click)="openActivityDialog()">
+                <mat-icon>add</mat-icon>
+                Add Activity
+              </button>
+            </div>
+
+            <!-- Category Filters -->
+            <div class="category-filters">
+              <button
+                class="filter-chip"
+                [class.active]="selectedCategory() === null"
+                (click)="setSelectedCategory(null)">
+                All
+              </button>
+              @for (cat of getUniqueCategories(); track cat) {
+                <button
+                  class="filter-chip"
+                  [class.active]="selectedCategory() === cat"
+                  (click)="setSelectedCategory(cat)">
+                  <mat-icon>{{ getCategoryIcon(cat) }}</mat-icon>
+                  {{ getCategoryLabel(cat) }}
+                </button>
+              }
+            </div>
+
+            @if (filteredActivities().length > 0) {
+              <div class="activities-list" [@cardStagger]="filteredActivities().length">
+                @for (activity of filteredActivities(); track activity.id) {
+                  <div class="activity-item" [class.completed]="activity.completed">
+                    <button mat-icon-button class="check-btn" (click)="toggleActivityCompleted(activity)">
+                      <mat-icon>{{ activity.completed ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                    </button>
+                    <div class="activity-content" (click)="openActivityDialog(activity)">
+                      <div class="activity-header">
+                        <h4>{{ activity.name }}</h4>
+                        @if (activity.category) {
+                          <span class="activity-category" [attr.data-category]="activity.category">
+                            <mat-icon>{{ getCategoryIcon(activity.category) }}</mat-icon>
+                            {{ getCategoryLabel(activity.category) }}
+                          </span>
+                        }
+                      </div>
+                      @if (activity.description) {
+                        <p class="activity-description">{{ activity.description }}</p>
+                      }
+                      @if (activity.estimatedCost) {
+                        <div class="activity-cost">
+                          <mat-icon>payments</mat-icon>
+                          {{ activity.currency || '$' }}{{ activity.estimatedCost | number:'1.0-0' }}
+                        </div>
+                      }
+                    </div>
+                    <button mat-icon-button class="edit-btn" (click)="openActivityDialog(activity); $event.stopPropagation()">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+
+              <!-- Cost Summary -->
+              @if (totalEstimatedCost() > 0) {
+                <div class="cost-summary" @fadeInUp>
+                  <div class="cost-row">
+                    <span>Estimated Total</span>
+                    <span class="cost-value">&#36;{{ totalEstimatedCost() | number:'1.0-0' }}</span>
+                  </div>
+                  <div class="cost-row completed-row">
+                    <span>Completed</span>
+                    <span class="cost-value">&#36;{{ completedCost() | number:'1.0-0' }}</span>
+                  </div>
+                  <div class="cost-row remaining-row">
+                    <span>Remaining</span>
+                    <span class="cost-value">&#36;{{ totalEstimatedCost() - completedCost() | number:'1.0-0' }}</span>
                   </div>
                 </div>
               }
-            </div>
-          } @else {
-            <div class="empty-state">
-              <mat-icon>explore</mat-icon>
-              <h3>No bucket list items yet</h3>
-              <p>Add things you want to see and do!</p>
-            </div>
-          }
-        </section>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>checklist</mat-icon>
+                <h3>No activities yet</h3>
+                <p>Plan your itinerary by adding activities!</p>
+              </div>
+            }
+          </section>
+        }
 
-        <!-- Item Dialog Overlay -->
+        <!-- Photo Item Dialog Overlay -->
         @if (dialogOpen()) {
-          <div class="dialog-overlay" (click)="closeItemDialog()">
-            <div class="item-dialog" (click)="$event.stopPropagation()">
+          <div class="dialog-overlay" @backdropAnimation (click)="closeItemDialog()">
+            <div class="item-dialog" @dialogAnimation (click)="$event.stopPropagation()">
               <div class="dialog-header">
                 <h3>{{ editingPhoto() ? 'Edit Item' : 'Add to Bucket List' }}</h3>
                 <button mat-icon-button (click)="closeItemDialog()">
@@ -163,6 +294,70 @@ import { environment } from '../../../../environments/environment';
             </div>
           </div>
         }
+
+        <!-- Activity Dialog Overlay -->
+        @if (activityDialogOpen()) {
+          <div class="dialog-overlay" @backdropAnimation (click)="closeActivityDialog()">
+            <div class="activity-dialog" @dialogAnimation (click)="$event.stopPropagation()">
+              <div class="dialog-header">
+                <h3>{{ editingActivity() ? 'Edit Activity' : 'Add Activity' }}</h3>
+                <button mat-icon-button (click)="closeActivityDialog()">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+
+              <div class="dialog-content">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Activity Name</mat-label>
+                  <input matInput [(ngModel)]="activityName" placeholder="e.g., Visit the Louvre Museum" required>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Description (Optional)</mat-label>
+                  <textarea matInput [(ngModel)]="activityDescription" rows="2" placeholder="Any notes or details..."></textarea>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Category</mat-label>
+                  <mat-select [(ngModel)]="activityCategory">
+                    @for (cat of categories; track cat.value) {
+                      <mat-option [value]="cat.value">
+                        <mat-icon>{{ cat.icon }}</mat-icon>
+                        {{ cat.label }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <div class="cost-inputs">
+                  <mat-form-field appearance="outline" class="cost-field">
+                    <mat-label>Estimated Cost</mat-label>
+                    <input matInput type="number" [(ngModel)]="activityCost" min="0" placeholder="0">
+                    <span matPrefix>$&nbsp;</span>
+                  </mat-form-field>
+                </div>
+              </div>
+
+              <div class="dialog-actions">
+                @if (editingActivity()) {
+                  <button mat-button color="warn" (click)="deleteActivity()" [disabled]="savingActivity()">
+                    <mat-icon>delete</mat-icon>
+                    Delete
+                  </button>
+                }
+                <span class="spacer"></span>
+                <button mat-button (click)="closeActivityDialog()" [disabled]="savingActivity()">Cancel</button>
+                <button mat-raised-button color="primary" (click)="saveActivity()" [disabled]="savingActivity() || !activityName.trim()">
+                  @if (savingActivity()) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                  } @else {
+                    Save
+                  }
+                </button>
+              </div>
+            </div>
+          </div>
+        }
       }
     </div>
   `,
@@ -180,7 +375,7 @@ import { environment } from '../../../../environments/environment';
 
     /* Hero Section */
     .hero-section {
-      margin-bottom: 32px;
+      margin-bottom: 0;
     }
 
     .hero-image {
@@ -218,6 +413,11 @@ import { environment } from '../../../../environments/environment';
     .back-btn {
       background: rgba(255, 255, 255, 0.9);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s;
+    }
+
+    .back-btn:hover {
+      transform: scale(1.05);
     }
 
     .hero-text {
@@ -252,6 +452,11 @@ import { environment } from '../../../../environments/environment';
       background: rgba(255, 255, 255, 0.9) !important;
       color: #667eea !important;
       font-weight: 500;
+      transition: transform 0.2s;
+    }
+
+    mat-chip:hover {
+      transform: scale(1.05);
     }
 
     mat-chip.visited {
@@ -266,9 +471,70 @@ import { environment } from '../../../../environments/environment';
       margin-right: 4px;
     }
 
+    /* Tabs */
+    .tabs-container {
+      padding: 0 24px;
+      margin-top: -20px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .tab-buttons {
+      display: flex;
+      gap: 12px;
+      background: white;
+      padding: 8px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .tab-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 20px;
+      border: none;
+      background: transparent;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: #f8f9ff;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .tab-btn mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .tab-count {
+      background: rgba(0,0,0,0.1);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+
+    .tab-btn.active .tab-count {
+      background: rgba(255,255,255,0.2);
+    }
+
     /* Bucket List Section */
-    .bucket-list-section {
-      padding: 0 24px 24px;
+    .bucket-list-section,
+    .itinerary-section {
+      padding: 32px 24px 24px;
     }
 
     .section-header {
@@ -285,8 +551,242 @@ import { environment } from '../../../../environments/environment';
       margin: 0;
     }
 
-    .add-item-btn mat-icon {
-      margin-right: 8px;
+    .add-item-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .add-item-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Category Filters */
+    .category-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .filter-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: 2px solid #e0e0e0;
+      background: white;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-chip:hover {
+      border-color: #667eea;
+      color: #667eea;
+    }
+
+    .filter-chip.active {
+      background: #667eea;
+      border-color: #667eea;
+      color: white;
+    }
+
+    .filter-chip mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Activities List */
+    .activities-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: all 0.2s;
+    }
+
+    .activity-item:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transform: translateX(4px);
+    }
+
+    .activity-item.completed {
+      opacity: 0.7;
+    }
+
+    .activity-item.completed .activity-content h4 {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .check-btn {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .check-btn mat-icon {
+      color: #ccc;
+      transition: color 0.2s;
+    }
+
+    .activity-item.completed .check-btn mat-icon {
+      color: #11998e;
+    }
+
+    .check-btn:hover mat-icon {
+      color: #667eea;
+    }
+
+    .activity-content {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .activity-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .activity-header h4 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .activity-category {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      background: #f0f4ff;
+      color: #667eea;
+    }
+
+    .activity-category[data-category="food"] {
+      background: #fff3e0;
+      color: #e65100;
+    }
+
+    .activity-category[data-category="adventure"] {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .activity-category[data-category="culture"] {
+      background: #fce4ec;
+      color: #c2185b;
+    }
+
+    .activity-category[data-category="shopping"] {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .activity-category[data-category="nightlife"] {
+      background: #ede7f6;
+      color: #7b1fa2;
+    }
+
+    .activity-category[data-category="relaxation"] {
+      background: #e0f7fa;
+      color: #00838f;
+    }
+
+    .activity-category mat-icon {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+    }
+
+    .activity-description {
+      margin: 4px 0 8px;
+      font-size: 14px;
+      color: #666;
+      line-height: 1.4;
+    }
+
+    .activity-cost {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #11998e;
+    }
+
+    .activity-cost mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    .activity-item .edit-btn {
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .activity-item:hover .edit-btn {
+      opacity: 1;
+    }
+
+    /* Cost Summary */
+    .cost-summary {
+      margin-top: 24px;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      color: white;
+    }
+
+    .cost-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+    }
+
+    .cost-row:not(:last-child) {
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .cost-row span {
+      font-size: 14px;
+    }
+
+    .cost-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .completed-row {
+      opacity: 0.7;
+    }
+
+    .remaining-row .cost-value {
+      font-size: 24px;
     }
 
     /* Postcards Grid */
@@ -352,7 +852,7 @@ import { environment } from '../../../../environments/environment';
       font-size: 13px;
     }
 
-    .edit-btn {
+    .postcard .edit-btn {
       opacity: 0;
       transition: opacity 0.2s;
     }
@@ -395,7 +895,7 @@ import { environment } from '../../../../environments/environment';
       margin: 0 0 24px;
     }
 
-    /* Item Dialog */
+    /* Dialogs */
     .dialog-overlay {
       position: fixed;
       inset: 0;
@@ -407,7 +907,8 @@ import { environment } from '../../../../environments/environment';
       padding: 24px;
     }
 
-    .item-dialog {
+    .item-dialog,
+    .activity-dialog {
       background: white;
       border-radius: 16px;
       width: 100%;
@@ -521,6 +1022,15 @@ import { environment } from '../../../../environments/environment';
       width: 100%;
     }
 
+    .cost-inputs {
+      display: flex;
+      gap: 16px;
+    }
+
+    .cost-field {
+      flex: 1;
+    }
+
     .dialog-actions {
       display: flex;
       align-items: center;
@@ -567,8 +1077,23 @@ import { environment } from '../../../../environments/environment';
         font-size: 15px;
       }
 
-      .bucket-list-section {
-        padding: 0 16px 16px;
+      .tabs-container {
+        padding: 0 16px;
+        margin-top: -16px;
+      }
+
+      .tab-buttons {
+        padding: 6px;
+      }
+
+      .tab-btn {
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+
+      .bucket-list-section,
+      .itinerary-section {
+        padding: 24px 16px 16px;
       }
 
       .section-header {
@@ -579,6 +1104,18 @@ import { environment } from '../../../../environments/environment';
 
       .add-item-btn {
         width: 100%;
+        justify-content: center;
+      }
+
+      .category-filters {
+        padding-bottom: 8px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .filter-chip {
+        flex-shrink: 0;
       }
 
       .postcards-grid {
@@ -586,7 +1123,11 @@ import { environment } from '../../../../environments/environment';
         gap: 16px;
       }
 
-      .edit-btn {
+      .activity-item .edit-btn {
+        opacity: 1;
+      }
+
+      .postcard .edit-btn {
         opacity: 1;
       }
 
@@ -605,7 +1146,8 @@ import { environment } from '../../../../environments/environment';
         align-items: flex-end;
       }
 
-      .item-dialog {
+      .item-dialog,
+      .activity-dialog {
         border-radius: 16px 16px 0 0;
         max-height: 85vh;
       }
@@ -628,8 +1170,25 @@ import { environment } from '../../../../environments/environment';
         font-size: 14px;
       }
 
-      .bucket-list-section {
-        padding: 0 12px 12px;
+      .tabs-container {
+        padding: 0 12px;
+      }
+
+      .tab-btn {
+        padding: 10px 12px;
+        font-size: 13px;
+        gap: 6px;
+      }
+
+      .tab-btn mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+
+      .bucket-list-section,
+      .itinerary-section {
+        padding: 20px 12px 12px;
       }
 
       .section-header h2 {
@@ -654,8 +1213,10 @@ import { environment } from '../../../../environments/environment';
 export class DestinationDetailComponent implements OnInit {
   loading = signal(true);
   destination = signal<Destination | null>(null);
+  activeTab = signal<'bucket' | 'itinerary'>('bucket');
+  selectedCategory = signal<string | null>(null);
 
-  // Dialog state
+  // Photo Dialog state
   dialogOpen = signal(false);
   editingPhoto = signal<Photo | null>(null);
   selectedFile = signal<File | null>(null);
@@ -663,6 +1224,37 @@ export class DestinationDetailComponent implements OnInit {
   itemNote = '';
   saving = signal(false);
   isDragging = signal(false);
+
+  // Activity Dialog state
+  activityDialogOpen = signal(false);
+  editingActivity = signal<Activity | null>(null);
+  activityName = '';
+  activityDescription = '';
+  activityCategory = 'sightseeing';
+  activityCost: number | null = null;
+  savingActivity = signal(false);
+
+  categories = ACTIVITY_CATEGORIES;
+
+  // Computed values
+  filteredActivities = computed(() => {
+    const activities = this.destination()?.activities || [];
+    const category = this.selectedCategory();
+    if (!category) return activities;
+    return activities.filter(a => a.category === category);
+  });
+
+  totalEstimatedCost = computed(() => {
+    const activities = this.destination()?.activities || [];
+    return activities.reduce((sum, a) => sum + (a.estimatedCost || 0), 0);
+  });
+
+  completedCost = computed(() => {
+    const activities = this.destination()?.activities || [];
+    return activities
+      .filter(a => a.completed)
+      .reduce((sum, a) => sum + (a.estimatedCost || 0), 0);
+  });
 
   constructor(
     private route: ActivatedRoute,
@@ -691,16 +1283,38 @@ export class DestinationDetailComponent implements OnInit {
     });
   }
 
+  setActiveTab(tab: 'bucket' | 'itinerary'): void {
+    this.activeTab.set(tab);
+  }
+
+  setSelectedCategory(category: string | null): void {
+    this.selectedCategory.set(category);
+  }
+
+  getUniqueCategories(): string[] {
+    const activities = this.destination()?.activities || [];
+    const categories = new Set(activities.map(a => a.category).filter(Boolean));
+    return Array.from(categories) as string[];
+  }
+
+  getCategoryIcon(category: string): string {
+    const cat = ACTIVITY_CATEGORIES.find(c => c.value === category);
+    return cat?.icon || 'category';
+  }
+
+  getCategoryLabel(category: string): string {
+    const cat = ACTIVITY_CATEGORIES.find(c => c.value === category);
+    return cat?.label || category;
+  }
+
   getCityImageUrl(): string {
     const dest = this.destination();
     if (!dest?.city) return 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200';
 
-    // Use city imageUrl from backend
     if (dest.city.imageUrl) {
       return dest.city.imageUrl;
     }
 
-    // Default travel image
     return 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200';
   }
 
@@ -727,7 +1341,7 @@ export class DestinationDetailComponent implements OnInit {
     return `${environment.apiUrl.replace('/api', '')}${photo.url}`;
   }
 
-  // Dialog methods
+  // Photo Dialog methods
   openItemDialog(photo?: Photo): void {
     if (photo) {
       this.editingPhoto.set(photo);
@@ -884,6 +1498,124 @@ export class DestinationDetailComponent implements OnInit {
       error: () => {
         this.saving.set(false);
         this.snackBar.open('Failed to delete item', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  // Activity Dialog methods
+  openActivityDialog(activity?: Activity): void {
+    if (activity) {
+      this.editingActivity.set(activity);
+      this.activityName = activity.name;
+      this.activityDescription = activity.description || '';
+      this.activityCategory = activity.category || 'sightseeing';
+      this.activityCost = activity.estimatedCost || null;
+    } else {
+      this.editingActivity.set(null);
+      this.activityName = '';
+      this.activityDescription = '';
+      this.activityCategory = 'sightseeing';
+      this.activityCost = null;
+    }
+    this.activityDialogOpen.set(true);
+  }
+
+  closeActivityDialog(): void {
+    this.activityDialogOpen.set(false);
+    this.editingActivity.set(null);
+    this.activityName = '';
+    this.activityDescription = '';
+    this.activityCategory = 'sightseeing';
+    this.activityCost = null;
+  }
+
+  toggleActivityCompleted(activity: Activity): void {
+    const dest = this.destination();
+    if (!dest) return;
+
+    this.destinationsService.toggleActivityCompleted(activity.id).subscribe({
+      next: (updated) => {
+        const activities = dest.activities?.map(a => a.id === activity.id ? updated : a) || [];
+        this.destination.set({ ...dest, activities });
+      },
+      error: () => {
+        this.snackBar.open('Failed to update activity', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  saveActivity(): void {
+    const dest = this.destination();
+    if (!dest || !this.activityName.trim()) return;
+
+    const editing = this.editingActivity();
+    this.savingActivity.set(true);
+
+    if (editing) {
+      this.destinationsService.updateActivity(editing.id, {
+        name: this.activityName.trim(),
+        description: this.activityDescription.trim() || undefined,
+        category: this.activityCategory,
+        estimatedCost: this.activityCost || undefined,
+        currency: '$'
+      }).subscribe({
+        next: (updated) => {
+          const activities = dest.activities?.map(a => a.id === editing.id ? updated : a) || [];
+          this.destination.set({ ...dest, activities });
+          this.savingActivity.set(false);
+          this.closeActivityDialog();
+          this.snackBar.open('Activity updated!', 'Close', { duration: 3000 });
+        },
+        error: () => {
+          this.savingActivity.set(false);
+          this.snackBar.open('Failed to update activity', 'Close', { duration: 3000 });
+        }
+      });
+    } else {
+      const data: CreateActivityRequest = {
+        destinationId: dest.id,
+        name: this.activityName.trim(),
+        description: this.activityDescription.trim() || undefined,
+        category: this.activityCategory,
+        estimatedCost: this.activityCost || undefined,
+        currency: '$'
+      };
+
+      this.destinationsService.createActivity(data).subscribe({
+        next: (activity) => {
+          const activities = [...(dest.activities || []), activity];
+          this.destination.set({ ...dest, activities });
+          this.savingActivity.set(false);
+          this.closeActivityDialog();
+          this.snackBar.open('Activity added!', 'Close', { duration: 3000 });
+        },
+        error: () => {
+          this.savingActivity.set(false);
+          this.snackBar.open('Failed to add activity', 'Close', { duration: 3000 });
+        }
+      });
+    }
+  }
+
+  deleteActivity(): void {
+    const editing = this.editingActivity();
+    const dest = this.destination();
+    if (!editing || !dest) return;
+
+    if (!confirm('Delete this activity?')) return;
+
+    this.savingActivity.set(true);
+    this.destinationsService.deleteActivity(editing.id).subscribe({
+      next: () => {
+        const activities = dest.activities?.filter(a => a.id !== editing.id) || [];
+        this.destination.set({ ...dest, activities });
+        this.savingActivity.set(false);
+        this.closeActivityDialog();
+        this.snackBar.open('Activity deleted', 'Close', { duration: 3000 });
+      },
+      error: () => {
+        this.savingActivity.set(false);
+        this.snackBar.open('Failed to delete activity', 'Close', { duration: 3000 });
       }
     });
   }

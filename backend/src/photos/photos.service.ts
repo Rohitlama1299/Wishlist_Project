@@ -23,7 +23,10 @@ export class PhotosService {
     private destinationRepository: Repository<Destination>,
     private configService: ConfigService,
   ) {
-    this.uploadPath = this.configService.get<string>('UPLOAD_PATH', './uploads');
+    this.uploadPath = this.configService.get<string>(
+      'UPLOAD_PATH',
+      './uploads',
+    );
     // Ensure upload directory exists
     if (!fs.existsSync(this.uploadPath)) {
       fs.mkdirSync(this.uploadPath, { recursive: true });
@@ -48,7 +51,8 @@ export class PhotosService {
 
     // Generate unique filename
     const fileExtension = path.extname(file.originalname);
-    const fileName = `${uuidv4()}${fileExtension}`;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const fileName = `${uuidv4() as string}${fileExtension}`;
     const filePath = path.join(this.uploadPath, fileName);
 
     // Save file

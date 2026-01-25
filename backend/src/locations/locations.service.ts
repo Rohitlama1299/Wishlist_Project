@@ -104,12 +104,16 @@ export class LocationsService {
       .getMany();
   }
 
-  async searchLocations(query: string): Promise<{ countries: Country[]; cities: City[] }> {
+  async searchLocations(
+    query: string,
+  ): Promise<{ countries: Country[]; cities: City[] }> {
     const [countries, cities] = await Promise.all([
       this.countryRepository
         .createQueryBuilder('country')
         .leftJoinAndSelect('country.continent', 'continent')
-        .where('LOWER(country.name) LIKE LOWER(:query)', { query: `%${query}%` })
+        .where('LOWER(country.name) LIKE LOWER(:query)', {
+          query: `%${query}%`,
+        })
         .orderBy('country.name', 'ASC')
         .limit(10)
         .getMany(),

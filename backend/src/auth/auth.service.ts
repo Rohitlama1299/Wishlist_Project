@@ -19,7 +19,9 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<{ accessToken: string; user: Partial<User> }> {
+  async register(
+    registerDto: RegisterDto,
+  ): Promise<{ accessToken: string; user: Partial<User> }> {
     const { email, password, firstName, lastName } = registerDto;
 
     const existingUser = await this.userRepository.findOne({
@@ -55,7 +57,9 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto): Promise<{ accessToken: string; user: Partial<User> }> {
+  async login(
+    loginDto: LoginDto,
+  ): Promise<{ accessToken: string; user: Partial<User> }> {
     const { email, password } = loginDto;
 
     const user = await this.userRepository.findOne({
@@ -92,7 +96,11 @@ export class AuthService {
 
   async updateProfile(
     userId: string,
-    updateData: { firstName?: string; lastName?: string; profilePicture?: string },
+    updateData: {
+      firstName?: string;
+      lastName?: string;
+      profilePicture?: string;
+    },
   ): Promise<Partial<User>> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
@@ -102,7 +110,8 @@ export class AuthService {
 
     if (updateData.firstName) user.firstName = updateData.firstName;
     if (updateData.lastName) user.lastName = updateData.lastName;
-    if (updateData.profilePicture !== undefined) user.profilePicture = updateData.profilePicture;
+    if (updateData.profilePicture !== undefined)
+      user.profilePicture = updateData.profilePicture;
 
     await this.userRepository.save(user);
 

@@ -60,7 +60,10 @@ export class DestinationsService {
     });
   }
 
-  async findByContinent(userId: string, continentId: number): Promise<Destination[]> {
+  async findByContinent(
+    userId: string,
+    continentId: number,
+  ): Promise<Destination[]> {
     return this.destinationRepository
       .createQueryBuilder('destination')
       .leftJoinAndSelect('destination.city', 'city')
@@ -74,7 +77,10 @@ export class DestinationsService {
       .getMany();
   }
 
-  async findByCountry(userId: string, countryId: number): Promise<Destination[]> {
+  async findByCountry(
+    userId: string,
+    countryId: number,
+  ): Promise<Destination[]> {
     return this.destinationRepository
       .createQueryBuilder('destination')
       .leftJoinAndSelect('destination.city', 'city')
@@ -180,20 +186,23 @@ export class DestinationsService {
 
         return acc;
       },
-      {} as Record<number, {
-        id: number;
-        name: string;
-        code: string;
-        continentName: string;
-        cityCount: number;
-        cities: Array<{
+      {} as Record<
+        number,
+        {
           id: number;
           name: string;
-          imageUrl?: string;
-          destinationId: string;
-          visited: boolean;
-        }>;
-      }>,
+          code: string;
+          continentName: string;
+          cityCount: number;
+          cities: Array<{
+            id: number;
+            name: string;
+            imageUrl?: string;
+            destinationId: string;
+            visited: boolean;
+          }>;
+        }
+      >,
     );
 
     return {
@@ -202,7 +211,9 @@ export class DestinationsService {
       pendingCount,
       continentStats,
       countryStats,
-      countryDetails: Object.values(countryDetails).sort((a, b) => b.cityCount - a.cityCount),
+      countryDetails: Object.values(countryDetails).sort(
+        (a, b) => b.cityCount - a.cityCount,
+      ),
     };
   }
 }

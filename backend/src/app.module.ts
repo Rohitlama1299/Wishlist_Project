@@ -33,14 +33,22 @@ import {
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         const isProduction = configService.get('NODE_ENV') === 'production';
-        const dbUrl = configService.get('DATABASE_URL');
+        const dbUrl = configService.get<string>('DATABASE_URL');
 
         // If DATABASE_URL is provided, use it directly
         if (dbUrl) {
           return {
             type: 'postgres',
             url: dbUrl,
-            entities: [User, Continent, Country, City, Destination, Photo, Activity],
+            entities: [
+              User,
+              Continent,
+              Country,
+              City,
+              Destination,
+              Photo,
+              Activity,
+            ],
             synchronize: !isProduction,
             logging: !isProduction,
             ssl: {
@@ -56,13 +64,23 @@ import {
           username: configService.get('DB_USERNAME', 'postgres'),
           password: configService.get('DB_PASSWORD', 'password'),
           database: configService.get('DB_NAME', 'travel_wishlist'),
-          entities: [User, Continent, Country, City, Destination, Photo, Activity],
+          entities: [
+            User,
+            Continent,
+            Country,
+            City,
+            Destination,
+            Photo,
+            Activity,
+          ],
           synchronize: !isProduction,
           logging: !isProduction,
           ssl: isProduction ? { rejectUnauthorized: false } : false,
-          extra: isProduction ? {
-            family: 4, // Force IPv4
-          } : {},
+          extra: isProduction
+            ? {
+                family: 4, // Force IPv4
+              }
+            : {},
         };
       },
       inject: [ConfigService],

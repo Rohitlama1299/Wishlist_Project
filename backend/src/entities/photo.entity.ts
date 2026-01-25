@@ -28,7 +28,9 @@ export class Photo {
   @Column({ default: 0 })
   sortOrder: number;
 
-  @ManyToOne(() => Destination, (destination) => destination.photos, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Destination, (destination) => destination.photos, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'destinationId' })
   destination: Destination;
 

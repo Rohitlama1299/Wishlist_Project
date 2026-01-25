@@ -67,33 +67,87 @@ a {
   height: auto;
 }
 
-// Button styles
+// Input focus animations
+.mat-mdc-form-field.mat-focused {
+  .mdc-notched-outline__leading,
+  .mdc-notched-outline__notch,
+  .mdc-notched-outline__trailing {
+    border-color: #667eea !important;
+    transition: border-color 0.2s ease;
+  }
+}
+
+.mdc-text-field--outlined:not(.mdc-text-field--disabled) {
+  .mdc-notched-outline__leading,
+  .mdc-notched-outline__notch,
+  .mdc-notched-outline__trailing {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  &.mdc-text-field--focused {
+    .mdc-notched-outline {
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+      border-radius: 12px;
+    }
+  }
+}
+
+// Button styles with enhanced animations
 .mat-mdc-raised-button,
 .mat-mdc-flat-button {
   border-radius: 12px !important;
   font-weight: 500 !important;
   letter-spacing: 0 !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.98);
+    transition-duration: 0.05s !important;
+  }
 }
 
 .mat-mdc-raised-button.mat-primary,
 .mat-mdc-flat-button.mat-primary {
   --mdc-filled-button-container-color: #667eea;
   --mdc-filled-button-label-text-color: white;
-}
 
-.mat-mdc-raised-button.mat-primary:hover,
-.mat-mdc-flat-button.mat-primary:hover {
-  --mdc-filled-button-container-color: #5a6fd1;
+  &:hover {
+    --mdc-filled-button-container-color: #5a6fd1;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.35);
+  }
 }
 
 // Outlined button
 .mat-mdc-outlined-button {
   border-radius: 12px !important;
+  transition: transform 0.15s ease, border-color 0.2s ease, background-color 0.2s ease !important;
+
+  &:hover {
+    transform: translateY(-1px);
+    background-color: rgba(102, 126, 234, 0.05);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.98);
+  }
 }
 
-// Icon button
+// Icon button with ripple enhancement
 .mat-mdc-icon-button {
   --mdc-icon-button-state-layer-size: 40px;
+  transition: transform 0.15s ease, background-color 0.15s ease !important;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 // Button spinner alignment
@@ -102,21 +156,39 @@ button .mat-mdc-progress-spinner {
   margin-right: 8px;
 }
 
-// Chips
+// Chips with animation
 .mat-mdc-chip {
   border-radius: 8px !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+
+  &:hover {
+    transform: scale(1.02);
+  }
 }
 
-// Menu
+// Menu with smooth appearance
 .mat-mdc-menu-panel {
   border-radius: 12px !important;
   box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
+  animation: menuFadeIn 0.15s ease-out;
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .mat-mdc-menu-item {
   border-radius: 8px;
   margin: 4px 8px;
   min-height: 44px;
+  transition: background-color 0.15s ease;
 }
 
 // Dialog
@@ -149,8 +221,146 @@ button .mat-mdc-progress-spinner {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(102, 126, 234, 0); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
 .fade-in {
   animation: fadeIn 0.3s ease-out;
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.fade-in-down {
+  animation: fadeInDown 0.3s ease-out;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.scale-in {
+  animation: scaleIn 0.3s ease-out;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 0%, #e0e0e0 20%, #f0f0f0 40%, #f0f0f0 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.bounce {
+  animation: bounce 0.5s ease-in-out;
+}
+
+// Interactive element base styles
+.interactive-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  }
+
+  &:active {
+    transform: translateY(-2px);
+    transition-duration: 0.1s;
+  }
+}
+
+.interactive-item {
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateX(4px);
+    background-color: rgba(102, 126, 234, 0.05);
+  }
+}
+
+// Focus visible styles for accessibility
+:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+// Smooth page transitions wrapper
+.page-container {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+// Loading states
+.loading-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: #f0f0f0;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.5) 50%,
+      transparent 100%
+    );
+    animation: shimmer 1.5s ease-in-out infinite;
+    background-size: 200% 100%;
+  }
 }
 
 // Responsive utilities
@@ -163,5 +373,16 @@ button .mat-mdc-progress-spinner {
 @media (min-width: 769px) {
   .hide-on-desktop {
     display: none !important;
+  }
+}
+
+// Reduce motion for accessibility
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

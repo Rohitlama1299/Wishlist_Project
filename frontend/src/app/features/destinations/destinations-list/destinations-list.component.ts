@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +13,19 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DestinationsService } from '../../../core/services/destinations.service';
 import { Destination, CountryDetail } from '../../../models';
+import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loader/skeleton-loader.component';
+import { fadeInUp, cardStagger, backdropAnimation, dialogAnimation } from '../../../animations/route.animations';
+
+const FILTER_STORAGE_KEY = 'destinations-filters';
+
+interface FilterState {
+  searchQuery: string;
+  statusFilter: string;
+  sortBy: string;
+  continentFilter: string;
+  hasPhotosFilter: boolean | null;
+  viewMode: 'all' | 'countries';
+}
 
 @Component({
   selector: 'app-destinations-list',
@@ -29,14 +42,16 @@ import { Destination, CountryDetail } from '../../../models';
     MatProgressSpinnerModule,
     MatChipsModule,
     MatMenuModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    SkeletonLoaderComponent
   ],
+  animations: [fadeInUp, cardStagger, backdropAnimation, dialogAnimation],
   template: `
     <div class="destinations-container">
-      <header class="destinations-header">
+      <header class="destinations-header" @fadeInUp>
         <div>
           <h1>My Destinations</h1>
-          <p>{{ filteredDestinations().length }} destinations in your wishlist</p>
+          <p>{{ filteredDestinations().length }} destinations in your list</p>
         </div>
         <button mat-raised-button color="primary" routerLink="/explore">
           <mat-icon>add</mat-icon>
@@ -45,7 +60,7 @@ import { Destination, CountryDetail } from '../../../models';
       </header>
 
       <!-- View Toggle -->
-      <div class="view-toggle">
+      <div class="view-toggle" @fadeInUp>
         <button mat-button [class.active]="viewMode() === 'all'" (click)="setViewMode('all')">
           <mat-icon>view_module</mat-icon>
           All Destinations
@@ -56,15 +71,20 @@ import { Destination, CountryDetail } from '../../../models';
         </button>
       </div>
 
-      <div class="filters" [class.hidden]="viewMode() === 'countries'">
+      <div class="filters" [class.hidden]="viewMode() === 'countries'" @fadeInUp>
         <mat-form-field appearance="outline" class="search-field">
           <mat-label>Search destinations</mat-label>
           <input matInput [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" placeholder="Search...">
           <mat-icon matPrefix>search</mat-icon>
+          @if (searchQuery) {
+            <button matSuffix mat-icon-button (click)="searchQuery = ''; applyFilters()">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Filter by status</mat-label>
+          <mat-label>Status</mat-label>
           <mat-select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
             <mat-option value="all">All</mat-option>
             <mat-option value="visited">Visited</mat-option>
@@ -73,21 +93,59 @@ import { Destination, CountryDetail } from '../../../models';
         </mat-form-field>
 
         <mat-form-field appearance="outline">
+          <mat-label>Continent</mat-label>
+          <mat-select [(ngModel)]="continentFilter" (ngModelChange)="applyFilters()">
+            <mat-option value="all">All Continents</mat-option>
+            @for (continent of getUniqueContinents(); track continent) {
+              <mat-option [value]="continent">{{ continent }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
           <mat-label>Sort by</mat-label>
           <mat-select [(ngModel)]="sortBy" (ngModelChange)="applyFilters()">
             <mat-option value="recent">Recently Added</mat-option>
+            <mat-option value="planned">Planned Date</mat-option>
+            <mat-option value="priority">Priority</mat-option>
             <mat-option value="name">City Name</mat-option>
             <mat-option value="country">Country</mat-option>
           </mat-select>
         </mat-form-field>
+
+        <!-- Additional Filters -->
+        <div class="filter-chips">
+          <button
+            class="filter-chip"
+            [class.active]="hasPhotosFilter === true"
+            (click)="togglePhotosFilter(true)">
+            <mat-icon>photo_camera</mat-icon>
+            Has Photos
+          </button>
+          <button
+            class="filter-chip"
+            [class.active]="hasPhotosFilter === false"
+            (click)="togglePhotosFilter(false)">
+            <mat-icon>photo_camera</mat-icon>
+            No Photos
+          </button>
+          @if (hasActiveFilters()) {
+            <button class="clear-btn" (click)="clearFilters()">
+              <mat-icon>filter_alt_off</mat-icon>
+              Clear All
+            </button>
+          }
+        </div>
       </div>
 
       @if (loading()) {
-        <div class="loading-container">
-          <mat-spinner></mat-spinner>
+        <div class="destinations-grid">
+          @for (i of [1,2,3,4,5,6]; track i) {
+            <app-skeleton-loader type="card"></app-skeleton-loader>
+          }
         </div>
       } @else if (filteredDestinations().length === 0) {
-        <mat-card class="empty-state">
+        <mat-card class="empty-state" @fadeInUp>
           <mat-card-content>
             @if (destinations().length === 0) {
               <mat-icon>flight_takeoff</mat-icon>
@@ -100,19 +158,34 @@ import { Destination, CountryDetail } from '../../../models';
               <mat-icon>search_off</mat-icon>
               <h2>No Results</h2>
               <p>No destinations match your current filters</p>
-              <button mat-button (click)="clearFilters()">Clear Filters</button>
+              <button mat-button (click)="clearFilters()">
+                <mat-icon>filter_alt_off</mat-icon>
+                Clear Filters
+              </button>
             }
           </mat-card-content>
         </mat-card>
       } @else if (viewMode() === 'all') {
-        <div class="destinations-grid">
+        <div class="destinations-grid" [@cardStagger]="filteredDestinations().length">
           @for (dest of filteredDestinations(); track dest.id) {
             <mat-card class="destination-card">
               <div class="destination-image" [routerLink]="['/destinations', dest.id]" [style.background-image]="'url(' + getDestinationImage(dest) + ')'">
                 @if (dest.visited) {
-                  <mat-chip class="status-chip visited">Visited</mat-chip>
+                  <mat-chip class="status-chip visited">
+                    <mat-icon>check</mat-icon>
+                    Visited
+                  </mat-chip>
                 } @else {
-                  <mat-chip class="status-chip pending">Wishlist</mat-chip>
+                  <mat-chip class="status-chip pending">
+                    <mat-icon>bookmark</mat-icon>
+                    Wishlist
+                  </mat-chip>
+                }
+                @if (dest.plannedDate && !dest.visited) {
+                  <div class="planned-badge">
+                    <mat-icon>event</mat-icon>
+                    {{ dest.plannedDate | date:'MMM d' }}
+                  </div>
                 }
                 <button mat-icon-button class="menu-btn" [matMenuTriggerFor]="menu" (click)="$event.stopPropagation()">
                   <mat-icon>more_vert</mat-icon>
@@ -138,8 +211,19 @@ import { Destination, CountryDetail } from '../../../models';
                   <p class="notes">{{ dest.notes | slice:0:80 }}{{ dest.notes.length > 80 ? '...' : '' }}</p>
                 }
                 <div class="card-stats">
-                  <span><mat-icon>photo_camera</mat-icon> {{ dest.photos?.length || 0 }}</span>
-                  <span><mat-icon>checklist</mat-icon> {{ dest.activities?.length || 0 }}</span>
+                  <span class="stat-item">
+                    <mat-icon>photo_camera</mat-icon>
+                    {{ dest.photos?.length || 0 }}
+                  </span>
+                  <span class="stat-item">
+                    <mat-icon>checklist</mat-icon>
+                    {{ dest.activities?.length || 0 }}
+                  </span>
+                  @if (dest.priority && dest.priority > 0) {
+                    <span class="priority-badge" [class.high]="dest.priority >= 3" [class.medium]="dest.priority === 2">
+                      Priority {{ dest.priority }}
+                    </span>
+                  }
                 </div>
               </mat-card-content>
             </mat-card>
@@ -147,9 +231,9 @@ import { Destination, CountryDetail } from '../../../models';
         </div>
       } @else {
         <!-- Countries View -->
-        <div class="countries-view">
+        <div class="countries-view" @fadeInUp>
           <p class="countries-subtitle">Click on a country to see your cities</p>
-          <div class="country-cards">
+          <div class="country-cards" [@cardStagger]="countryDetails().length">
             @for (country of countryDetails(); track country.id) {
               <div class="country-item" (click)="openCountryModal(country)">
                 <div class="country-flag">{{ getFlag(country.code) }}</div>
@@ -167,8 +251,8 @@ import { Destination, CountryDetail } from '../../../models';
 
       <!-- Country Cities Modal -->
       @if (selectedCountry()) {
-        <div class="modal-overlay" (click)="closeCountryModal()">
-          <div class="country-modal" (click)="$event.stopPropagation()">
+        <div class="modal-overlay" @backdropAnimation (click)="closeCountryModal()">
+          <div class="country-modal" @dialogAnimation (click)="$event.stopPropagation()">
             <div class="modal-header">
               <div class="modal-title">
                 <span class="modal-flag">{{ getFlag(selectedCountry()!.code) }}</span>
@@ -231,140 +315,16 @@ import { Destination, CountryDetail } from '../../../models';
       color: #666;
     }
 
-    .filters {
+    .destinations-header button {
       display: flex;
-      gap: 16px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-
-    .search-field {
-      flex: 1;
-      min-width: 250px;
-    }
-
-    .loading-container {
-      display: flex;
-      justify-content: center;
-      padding: 48px;
-    }
-
-    .destinations-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 24px;
-    }
-
-    .destination-card {
-      overflow: hidden;
-      cursor: pointer;
+      align-items: center;
+      gap: 8px;
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .destination-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-    }
-
-    .destination-image {
-      height: 180px;
-      background-size: cover;
-      background-position: center;
-      background-color: #e0e0e0;
-      position: relative;
-    }
-
-    .status-chip {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-    }
-
-    .status-chip.visited {
-      background: #11998e !important;
-      color: white !important;
-    }
-
-    .status-chip.pending {
-      background: #667eea !important;
-      color: white !important;
-    }
-
-    .menu-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: rgba(255,255,255,0.9) !important;
-    }
-
-    mat-card-content h3 {
-      margin: 0 0 8px;
-      font-size: 18px;
-      color: #1a1a2e;
-    }
-
-    .location {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      color: #666;
-      font-size: 14px;
-      margin: 0 0 8px;
-    }
-
-    .location mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
-
-    .notes {
-      color: #888;
-      font-size: 13px;
-      margin: 0 0 8px;
-      line-height: 1.4;
-    }
-
-    .card-stats {
-      display: flex;
-      gap: 16px;
-      color: #888;
-      font-size: 13px;
-    }
-
-    .card-stats span {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .card-stats mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 48px 24px;
-    }
-
-    .empty-state mat-icon {
-      font-size: 64px;
-      width: 64px;
-      height: 64px;
-      color: #667eea;
-      margin-bottom: 16px;
-    }
-
-    .empty-state h2 {
-      margin: 0 0 8px;
-      color: #1a1a2e;
-    }
-
-    .empty-state p {
-      color: #666;
-      margin: 0 0 24px;
+    .destinations-header button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
     }
 
     /* View Toggle */
@@ -399,8 +359,286 @@ import { Destination, CountryDetail } from '../../../models';
       height: 18px;
     }
 
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
     .filters.hidden {
       display: none;
+    }
+
+    .search-field {
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .filter-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      width: 100%;
+      align-items: center;
+    }
+
+    .filter-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: 2px solid #e0e0e0;
+      background: white;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-chip:hover {
+      border-color: #667eea;
+      color: #667eea;
+    }
+
+    .filter-chip.active {
+      background: #667eea;
+      border-color: #667eea;
+      color: white;
+    }
+
+    .filter-chip mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    .clear-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      color: #f44336;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .clear-btn:hover {
+      background: #ffebee;
+      border-radius: 20px;
+    }
+
+    .clear-btn mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Destinations Grid */
+    .destinations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .destination-card {
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border-radius: 20px !important;
+    }
+
+    .destination-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .destination-card:hover .destination-image {
+      transform: scale(1.03);
+    }
+
+    .destination-image {
+      height: 180px;
+      background-size: cover;
+      background-position: center;
+      background-color: #e0e0e0;
+      position: relative;
+      transition: transform 0.4s ease;
+    }
+
+    .status-chip {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-chip mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    .status-chip.visited {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+      color: white !important;
+    }
+
+    .status-chip.pending {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      color: white !important;
+    }
+
+    .planned-badge {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .planned-badge mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    .menu-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255,255,255,0.9) !important;
+      transition: transform 0.2s;
+    }
+
+    .menu-btn:hover {
+      transform: scale(1.1);
+    }
+
+    mat-card-content {
+      padding: 20px !important;
+      cursor: pointer;
+    }
+
+    mat-card-content h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      color: #1a1a2e;
+      font-weight: 600;
+    }
+
+    .location {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #666;
+      font-size: 14px;
+      margin: 0 0 8px;
+    }
+
+    .location mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #667eea;
+    }
+
+    .notes {
+      color: #888;
+      font-size: 13px;
+      margin: 0 0 12px;
+      line-height: 1.4;
+    }
+
+    .card-stats {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #888;
+      font-size: 13px;
+    }
+
+    .stat-item mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    .priority-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #f0f0f0;
+      color: #666;
+    }
+
+    .priority-badge.high {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .priority-badge.medium {
+      background: #fff3e0;
+      color: #e65100;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      border-radius: 20px !important;
+    }
+
+    .empty-state mat-icon {
+      font-size: 64px;
+      width: 64px;
+      height: 64px;
+      color: #667eea;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h2 {
+      margin: 0 0 8px;
+      color: #1a1a2e;
+    }
+
+    .empty-state p {
+      color: #666;
+      margin: 0 0 24px;
+    }
+
+    .empty-state button mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      margin-right: 8px;
     }
 
     /* Countries View */
@@ -639,6 +877,7 @@ import { Destination, CountryDetail } from '../../../models';
 
       .destinations-header button {
         width: 100%;
+        justify-content: center;
       }
 
       .view-toggle {
@@ -662,6 +901,17 @@ import { Destination, CountryDetail } from '../../../models';
 
       .filters mat-form-field {
         width: 100%;
+      }
+
+      .filter-chips {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .filter-chip {
+        flex-shrink: 0;
       }
 
       .destinations-grid {
@@ -754,14 +1004,47 @@ export class DestinationsListComponent implements OnInit {
   searchQuery = '';
   statusFilter = 'all';
   sortBy = 'recent';
+  continentFilter = 'all';
+  hasPhotosFilter: boolean | null = null;
 
   constructor(
     private destinationsService: DestinationsService,
     private snackBar: MatSnackBar
-  ) {}
+  ) {
+    // Save filters to localStorage when they change
+    effect(() => {
+      const state: FilterState = {
+        searchQuery: this.searchQuery,
+        statusFilter: this.statusFilter,
+        sortBy: this.sortBy,
+        continentFilter: this.continentFilter,
+        hasPhotosFilter: this.hasPhotosFilter,
+        viewMode: this.viewMode()
+      };
+      localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(state));
+    });
+  }
 
   ngOnInit(): void {
+    this.loadFilterState();
     this.loadDestinations();
+  }
+
+  private loadFilterState(): void {
+    const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+    if (saved) {
+      try {
+        const state: FilterState = JSON.parse(saved);
+        this.searchQuery = state.searchQuery || '';
+        this.statusFilter = state.statusFilter || 'all';
+        this.sortBy = state.sortBy || 'recent';
+        this.continentFilter = state.continentFilter || 'all';
+        this.hasPhotosFilter = state.hasPhotosFilter ?? null;
+        this.viewMode.set(state.viewMode || 'all');
+      } catch {
+        // Ignore parse errors
+      }
+    }
   }
 
   loadDestinations(): void {
@@ -773,6 +1056,34 @@ export class DestinationsListComponent implements OnInit {
       },
       error: () => this.loading.set(false)
     });
+  }
+
+  getUniqueContinents(): string[] {
+    const continents = new Set(
+      this.destinations()
+        .map(d => d.city?.country?.continent?.name)
+        .filter(Boolean)
+    );
+    return Array.from(continents) as string[];
+  }
+
+  hasActiveFilters(): boolean {
+    return (
+      this.searchQuery !== '' ||
+      this.statusFilter !== 'all' ||
+      this.sortBy !== 'recent' ||
+      this.continentFilter !== 'all' ||
+      this.hasPhotosFilter !== null
+    );
+  }
+
+  togglePhotosFilter(hasPhotos: boolean): void {
+    if (this.hasPhotosFilter === hasPhotos) {
+      this.hasPhotosFilter = null;
+    } else {
+      this.hasPhotosFilter = hasPhotos;
+    }
+    this.applyFilters();
   }
 
   applyFilters(): void {
@@ -795,11 +1106,44 @@ export class DestinationsListComponent implements OnInit {
       filtered = filtered.filter(d => !d.visited);
     }
 
+    // Continent filter
+    if (this.continentFilter !== 'all') {
+      filtered = filtered.filter(d =>
+        d.city?.country?.continent?.name === this.continentFilter
+      );
+    }
+
+    // Photos filter
+    if (this.hasPhotosFilter === true) {
+      filtered = filtered.filter(d => d.photos && d.photos.length > 0);
+    } else if (this.hasPhotosFilter === false) {
+      filtered = filtered.filter(d => !d.photos || d.photos.length === 0);
+    }
+
     // Sort
-    if (this.sortBy === 'name') {
-      filtered.sort((a, b) => (a.city?.name || '').localeCompare(b.city?.name || ''));
-    } else if (this.sortBy === 'country') {
-      filtered.sort((a, b) => (a.city?.country?.name || '').localeCompare(b.city?.country?.name || ''));
+    switch (this.sortBy) {
+      case 'name':
+        filtered.sort((a, b) => (a.city?.name || '').localeCompare(b.city?.name || ''));
+        break;
+      case 'country':
+        filtered.sort((a, b) => (a.city?.country?.name || '').localeCompare(b.city?.country?.name || ''));
+        break;
+      case 'planned':
+        filtered.sort((a, b) => {
+          if (!a.plannedDate && !b.plannedDate) return 0;
+          if (!a.plannedDate) return 1;
+          if (!b.plannedDate) return -1;
+          return new Date(a.plannedDate).getTime() - new Date(b.plannedDate).getTime();
+        });
+        break;
+      case 'priority':
+        filtered.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+        break;
+      case 'recent':
+      default:
+        filtered.sort((a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
     }
 
     this.filteredDestinations.set(filtered);
@@ -809,6 +1153,8 @@ export class DestinationsListComponent implements OnInit {
     this.searchQuery = '';
     this.statusFilter = 'all';
     this.sortBy = 'recent';
+    this.continentFilter = 'all';
+    this.hasPhotosFilter = null;
     this.applyFilters();
   }
 
@@ -842,12 +1188,9 @@ export class DestinationsListComponent implements OnInit {
   }
 
   getDestinationImage(dest: Destination): string {
-    // Use city imageUrl from backend
     if (dest.city?.imageUrl) {
       return dest.city.imageUrl;
     }
-
-    // Default travel image
     return 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600';
   }
 
@@ -891,7 +1234,6 @@ export class DestinationsListComponent implements OnInit {
       }
     }
 
-    // Sort by city count descending
     const sorted = Array.from(countryMap.values()).sort((a, b) => b.cityCount - a.cityCount);
     this.countryDetails.set(sorted);
   }

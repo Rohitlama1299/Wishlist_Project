@@ -50,7 +50,9 @@ export class Destination {
   @OneToMany(() => Photo, (photo) => photo.destination, { cascade: true })
   photos: Photo[];
 
-  @OneToMany(() => Activity, (activity) => activity.destination, { cascade: true })
+  @OneToMany(() => Activity, (activity) => activity.destination, {
+    cascade: true,
+  })
   activities: Activity[];
 
   @CreateDateColumn()

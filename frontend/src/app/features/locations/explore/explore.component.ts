@@ -123,12 +123,14 @@ import { debounceTime, Subject } from 'rxjs';
                     </mat-card-content>
                     <mat-card-actions>
                       <button mat-flat-button color="primary" (click)="addToWishlist(city)" [disabled]="addingCity() === city.id">
-                        @if (addingCity() === city.id) {
-                          <mat-spinner diameter="18"></mat-spinner>
-                        } @else {
-                          <mat-icon>add</mat-icon>
-                          Add to Wishlist
-                        }
+                        <span class="button-content">
+                          @if (addingCity() === city.id) {
+                            <mat-spinner diameter="18"></mat-spinner>
+                          } @else {
+                            <mat-icon>add</mat-icon>
+                            <span>Add to Wishlist</span>
+                          }
+                        </span>
                       </button>
                     </mat-card-actions>
                   </mat-card>
@@ -224,12 +226,14 @@ import { debounceTime, Subject } from 'rxjs';
                     </div>
                     <mat-card-actions>
                       <button mat-flat-button color="primary" (click)="addToWishlist(city)" [disabled]="addingCity() === city.id">
-                        @if (addingCity() === city.id) {
-                          <mat-spinner diameter="18"></mat-spinner>
-                        } @else {
-                          <mat-icon>add</mat-icon>
-                          Add to Wishlist
-                        }
+                        <span class="button-content">
+                          @if (addingCity() === city.id) {
+                            <mat-spinner diameter="18"></mat-spinner>
+                          } @else {
+                            <mat-icon>add</mat-icon>
+                            <span>Add to Wishlist</span>
+                          }
+                        </span>
                       </button>
                     </mat-card-actions>
                   </mat-card>
@@ -592,6 +596,17 @@ import { debounceTime, Subject } from 'rxjs';
     .city-card mat-card-actions button {
       width: 100%;
       border-radius: 8px;
+    }
+
+    .button-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .button-content mat-spinner {
+      display: inline-block;
     }
 
     .no-results, .no-cities {

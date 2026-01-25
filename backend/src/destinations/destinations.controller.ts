@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Query,
   ParseIntPipe,
 } from '@nestjs/common';
 import { DestinationsService } from './destinations.service';

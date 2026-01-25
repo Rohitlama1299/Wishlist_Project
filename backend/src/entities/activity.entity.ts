@@ -35,7 +35,9 @@ export class Activity {
   @Column({ default: 0 })
   sortOrder: number;
 
-  @ManyToOne(() => Destination, (destination) => destination.activities, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Destination, (destination) => destination.activities, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'destinationId' })
   destination: Destination;
 

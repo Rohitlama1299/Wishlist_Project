@@ -10,7 +10,7 @@ async function bootstrap() {
   const isProduction = configService.get('NODE_ENV') === 'production';
 
   // Enable CORS for Angular frontend
-  const frontendUrl = configService.get('FRONTEND_URL', '')?.trim();
+  const frontendUrl = configService.get<string>('FRONTEND_URL', '')?.trim();
   const allowedOrigins = isProduction
     ? [
         frontendUrl,
@@ -50,4 +50,4 @@ async function bootstrap() {
   console.log(`Application is running on port ${port}`);
   console.log(`Environment: ${isProduction ? 'production' : 'development'}`);
 }
-bootstrap();
+void bootstrap();

@@ -1,6 +1,6 @@
-import { Component, ViewChild, signal, HostListener } from '@angular/core';
+import { Component, ViewChild, signal, HostListener, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,6 +9,10 @@ import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../../core/services/auth.service';
+import { routeAnimations } from '../../../animations/route.animations';
+import { filter } from 'rxjs/operators';
+import { DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-layout',
@@ -26,6 +30,8 @@ import { AuthService } from '../../../core/services/auth.service';
     MatMenuModule,
     MatTooltipModule
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  animations: [routeAnimations],
   template: `
     <mat-sidenav-container class="sidenav-container">
       <mat-sidenav #sidenav [mode]="isMobile() ? 'over' : 'side'" [opened]="!isMobile()" class="sidenav" [fixedInViewport]="true">
@@ -124,7 +130,9 @@ import { AuthService } from '../../../core/services/auth.service';
             </mat-menu>
           </div>
         }
-        <router-outlet></router-outlet>
+        <div class="page-wrapper" [@routeAnimations]="getRouteAnimationData()">
+          <router-outlet></router-outlet>
+        </div>
       </mat-sidenav-content>
     </mat-sidenav-container>
   `,
@@ -311,6 +319,10 @@ import { AuthService } from '../../../core/services/auth.service';
       background: #f8f9ff;
     }
 
+    .page-wrapper {
+      min-height: 100%;
+    }
+
     ::ng-deep .user-menu {
       min-width: 200px !important;
     }
@@ -405,8 +417,30 @@ export class LayoutComponent {
   @ViewChild('sidenav') sidenav!: MatSidenav;
   isMobile = signal(window.innerWidth <= 768);
 
+  private cdr = inject(ChangeDetectorRef);
+  private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
+
+  // Store animation state in a signal to prevent expression changed error
+  // Start with undefined to signal "not ready yet"
+  currentAnimationState = signal<string | undefined>(undefined);
+
   constructor(public authService: AuthService) {
     this.checkScreenSize();
+
+    // Subscribe to navigation events to update animation state
+    // This ensures the animation state is updated in a controlled manner
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((event) => {
+      const navEnd = event as NavigationEnd;
+      // Extract route segment for animation
+      const urlSegments = navEnd.urlAfterRedirects.split('/').filter(s => s);
+      const animationState = urlSegments[0] || 'home';
+      this.currentAnimationState.set(animationState);
+      this.cdr.markForCheck();
+    });
   }
 
   @HostListener('window:resize')
@@ -432,5 +466,10 @@ export class LayoutComponent {
 
   logout(): void {
     this.authService.logout();
+  }
+
+  getRouteAnimationData(): string | undefined {
+    // Return the stored animation state - only changes when NavigationEnd fires
+    return this.currentAnimationState();
   }
 }
