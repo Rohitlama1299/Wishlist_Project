@@ -396,7 +396,8 @@ const unsplash = (photoId: string): string =>
   `https://images.unsplash.com/photo-${photoId}?w=800&q=80`;
 
 // Fallback for cities without curated photos
-const fallbackImage = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80';
+const fallbackImage =
+  'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80';
 
 // Get city image URL - curated Unsplash photo or fallback
 const getCityImageUrl = (cityName: string): string => {
