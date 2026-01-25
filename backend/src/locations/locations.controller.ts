@@ -65,6 +65,17 @@ export class LocationsController {
     return this.locationsService.getCityById(id);
   }
 
+  @Get('cities/:id/activities')
+  getCityActivities(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('category') category?: string,
+  ) {
+    if (category) {
+      return this.locationsService.getCityActivitiesByCategory(id, category);
+    }
+    return this.locationsService.getCityActivities(id);
+  }
+
   @Post('cities')
   @UseGuards(JwtAuthGuard)
   createCity(@Body() createCityDto: CreateCityDto) {

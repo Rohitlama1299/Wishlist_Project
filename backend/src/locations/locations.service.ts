@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Continent, Country, City } from '../entities';
+import { Continent, Country, City, CityActivity } from '../entities';
 
 @Injectable()
 export class LocationsService {
@@ -12,6 +12,8 @@ export class LocationsService {
     private countryRepository: Repository<Country>,
     @InjectRepository(City)
     private cityRepository: Repository<City>,
+    @InjectRepository(CityActivity)
+    private cityActivityRepository: Repository<CityActivity>,
   ) {}
 
   // Continents
@@ -152,5 +154,31 @@ export class LocationsService {
     });
 
     return this.cityRepository.save(city);
+  }
+
+  // City Activities
+  async getCityActivities(cityId: number): Promise<CityActivity[]> {
+    const city = await this.cityRepository.findOne({
+      where: { id: cityId },
+    });
+
+    if (!city) {
+      throw new NotFoundException(`City with ID ${cityId} not found`);
+    }
+
+    return this.cityActivityRepository.find({
+      where: { cityId },
+      order: { sortOrder: 'ASC', category: 'ASC' },
+    });
+  }
+
+  async getCityActivitiesByCategory(
+    cityId: number,
+    category: string,
+  ): Promise<CityActivity[]> {
+    return this.cityActivityRepository.find({
+      where: { cityId, category },
+      order: { sortOrder: 'ASC' },
+    });
   }
 }

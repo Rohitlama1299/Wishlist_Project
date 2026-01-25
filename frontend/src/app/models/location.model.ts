@@ -26,3 +26,15 @@ export interface City {
   countryId: number;
   country?: Country;
 }
+
+export interface CityActivity {
+  id: number;
+  name: string;
+  description?: string;
+  category: string;
+  estimatedCost?: number;
+  currency?: string;
+  duration?: string;
+  imageUrl?: string;
+  cityId: number;
+}

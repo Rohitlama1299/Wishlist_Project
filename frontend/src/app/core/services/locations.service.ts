@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Continent, Country, City } from '../../models';
+import { Continent, Country, City, CityActivity } from '../../models';
 
 @Injectable({
   providedIn: 'root'
@@ -54,5 +54,10 @@ export class LocationsService {
 
   getCity(id: number): Observable<City> {
     return this.http.get<City>(`${this.apiUrl}/cities/${id}`);
+  }
+
+  // City Activities
+  getCityActivities(cityId: number): Observable<CityActivity[]> {
+    return this.http.get<CityActivity[]>(`${this.apiUrl}/cities/${cityId}/activities`);
   }
 }

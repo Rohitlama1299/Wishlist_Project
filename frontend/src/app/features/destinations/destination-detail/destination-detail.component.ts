@@ -14,7 +14,8 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { DestinationsService } from '../../../core/services/destinations.service';
-import { Destination, Photo, Activity, CreateActivityRequest } from '../../../models';
+import { LocationsService } from '../../../core/services/locations.service';
+import { Destination, Photo, Activity, CreateActivityRequest, CityActivity } from '../../../models';
 import { environment } from '../../../../environments/environment';
 import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loader/skeleton-loader.component';
 import { fadeInUp, cardStagger, backdropAnimation, dialogAnimation } from '../../../animations/route.animations';
@@ -95,6 +96,11 @@ const ACTIVITY_CATEGORIES = [
               <mat-icon>checklist</mat-icon>
               Itinerary
               <span class="tab-count">{{ destination()!.activities?.length || 0 }}</span>
+            </button>
+            <button class="tab-btn" [class.active]="activeTab() === 'suggestions'" (click)="setActiveTab('suggestions')">
+              <mat-icon>lightbulb</mat-icon>
+              Ideas
+              <span class="tab-count">{{ suggestedActivities().length }}</span>
             </button>
           </div>
         </div>
@@ -227,6 +233,103 @@ const ACTIVITY_CATEGORIES = [
                 <mat-icon>checklist</mat-icon>
                 <h3>No activities yet</h3>
                 <p>Plan your itinerary by adding activities!</p>
+              </div>
+            }
+          </section>
+        }
+
+        <!-- Suggestions Section -->
+        @if (activeTab() === 'suggestions') {
+          <section class="suggestions-section" @fadeInUp>
+            <div class="section-header">
+              <div>
+                <h2>Activity Ideas</h2>
+                <p class="section-subtitle">Curated suggestions for {{ destination()!.city?.name }}</p>
+              </div>
+            </div>
+
+            @if (loadingSuggestions()) {
+              <div class="suggestions-loading">
+                <mat-spinner diameter="40"></mat-spinner>
+                <p>Loading suggestions...</p>
+              </div>
+            } @else if (suggestedActivities().length > 0) {
+              <!-- Category Filters -->
+              <div class="category-filters">
+                <button
+                  class="filter-chip"
+                  [class.active]="selectedSuggestionCategory() === null"
+                  (click)="setSelectedSuggestionCategory(null)">
+                  All
+                </button>
+                @for (cat of getUniqueSuggestionCategories(); track cat) {
+                  <button
+                    class="filter-chip"
+                    [class.active]="selectedSuggestionCategory() === cat"
+                    (click)="setSelectedSuggestionCategory(cat)">
+                    <mat-icon>{{ getCategoryIcon(cat) }}</mat-icon>
+                    {{ getCategoryLabel(cat) }}
+                  </button>
+                }
+              </div>
+
+              <div class="suggestions-grid" [@cardStagger]="filteredSuggestions().length">
+                @for (suggestion of filteredSuggestions(); track suggestion.id) {
+                  <div class="suggestion-card" [class.in-itinerary]="isActivityInItinerary(suggestion)">
+                    @if (suggestion.imageUrl) {
+                      <div class="suggestion-image" [style.backgroundImage]="'url(' + suggestion.imageUrl + ')'"></div>
+                    } @else {
+                      <div class="suggestion-image suggestion-image-placeholder">
+                        <mat-icon>{{ getCategoryIcon(suggestion.category) }}</mat-icon>
+                      </div>
+                    }
+                    <div class="suggestion-content">
+                      <div class="suggestion-header">
+                        <h4>{{ suggestion.name }}</h4>
+                        <span class="suggestion-category" [attr.data-category]="suggestion.category">
+                          <mat-icon>{{ getCategoryIcon(suggestion.category) }}</mat-icon>
+                          {{ getCategoryLabel(suggestion.category) }}
+                        </span>
+                      </div>
+                      @if (suggestion.description) {
+                        <p class="suggestion-description">{{ suggestion.description }}</p>
+                      }
+                      <div class="suggestion-meta">
+                        @if (suggestion.duration) {
+                          <span class="meta-item">
+                            <mat-icon>schedule</mat-icon>
+                            {{ suggestion.duration }}
+                          </span>
+                        }
+                        @if (suggestion.estimatedCost) {
+                          <span class="meta-item cost">
+                            <mat-icon>payments</mat-icon>
+                            {{ suggestion.currency || '$' }}{{ suggestion.estimatedCost | number:'1.0-0' }}
+                          </span>
+                        }
+                      </div>
+                      <div class="suggestion-actions">
+                        @if (isActivityInItinerary(suggestion)) {
+                          <button mat-button disabled class="added-btn">
+                            <mat-icon>check</mat-icon>
+                            In Itinerary
+                          </button>
+                        } @else {
+                          <button mat-raised-button color="primary" (click)="addSuggestionToItinerary(suggestion)">
+                            <mat-icon>add</mat-icon>
+                            Add to Itinerary
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>lightbulb</mat-icon>
+                <h3>No suggestions yet</h3>
+                <p>We're working on adding activity ideas for this destination!</p>
               </div>
             }
           </section>
@@ -533,8 +636,197 @@ const ACTIVITY_CATEGORIES = [
 
     /* Bucket List Section */
     .bucket-list-section,
-    .itinerary-section {
+    .itinerary-section,
+    .suggestions-section {
       padding: 32px 24px 24px;
+    }
+
+    .section-subtitle {
+      color: #888;
+      font-size: 14px;
+      margin: 4px 0 0;
+    }
+
+    /* Suggestions Section */
+    .suggestions-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px;
+      gap: 16px;
+      color: #888;
+    }
+
+    .suggestions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .suggestion-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+    }
+
+    .suggestion-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .suggestion-card.in-itinerary {
+      opacity: 0.7;
+      border: 2px solid #11998e;
+    }
+
+    .suggestion-image {
+      height: 160px;
+      background-size: cover;
+      background-position: center;
+      background-color: #f0f4ff;
+    }
+
+    .suggestion-image-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .suggestion-image-placeholder mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .suggestion-content {
+      padding: 16px;
+    }
+
+    .suggestion-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .suggestion-header h4 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a2e;
+      flex: 1;
+    }
+
+    .suggestion-category {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      background: #f0f4ff;
+      color: #667eea;
+      white-space: nowrap;
+    }
+
+    .suggestion-category[data-category="food"] {
+      background: #fff3e0;
+      color: #e65100;
+    }
+
+    .suggestion-category[data-category="adventure"] {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .suggestion-category[data-category="culture"] {
+      background: #fce4ec;
+      color: #c2185b;
+    }
+
+    .suggestion-category[data-category="shopping"] {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .suggestion-category[data-category="nightlife"] {
+      background: #ede7f6;
+      color: #7b1fa2;
+    }
+
+    .suggestion-category[data-category="nature"] {
+      background: #e8f5e9;
+      color: #388e3c;
+    }
+
+    .suggestion-category mat-icon {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+    }
+
+    .suggestion-description {
+      margin: 0 0 12px;
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .suggestion-meta {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .meta-item.cost {
+      font-weight: 600;
+      color: #11998e;
+    }
+
+    .meta-item mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    .suggestion-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .suggestion-actions button {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .added-btn {
+      color: #11998e !important;
+    }
+
+    .added-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
 
     .section-header {
@@ -1084,16 +1376,37 @@ const ACTIVITY_CATEGORIES = [
 
       .tab-buttons {
         padding: 6px;
+        gap: 8px;
       }
 
       .tab-btn {
-        padding: 12px 16px;
-        font-size: 14px;
+        padding: 10px 12px;
+        font-size: 12px;
+        gap: 4px;
+      }
+
+      .tab-btn mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+
+      .tab-count {
+        display: none;
       }
 
       .bucket-list-section,
-      .itinerary-section {
+      .itinerary-section,
+      .suggestions-section {
         padding: 24px 16px 16px;
+      }
+
+      .suggestions-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .suggestion-image {
+        height: 140px;
       }
 
       .section-header {
@@ -1175,20 +1488,31 @@ const ACTIVITY_CATEGORIES = [
       }
 
       .tab-btn {
-        padding: 10px 12px;
-        font-size: 13px;
-        gap: 6px;
+        padding: 8px 10px;
+        font-size: 11px;
+        gap: 4px;
       }
 
       .tab-btn mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
       }
 
       .bucket-list-section,
-      .itinerary-section {
+      .itinerary-section,
+      .suggestions-section {
         padding: 20px 12px 12px;
+      }
+
+      .suggestion-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .suggestion-meta {
+        flex-wrap: wrap;
+        gap: 8px;
       }
 
       .section-header h2 {
@@ -1213,7 +1537,12 @@ const ACTIVITY_CATEGORIES = [
 export class DestinationDetailComponent implements OnInit {
   loading = signal(true);
   destination = signal<Destination | null>(null);
-  activeTab = signal<'bucket' | 'itinerary'>('bucket');
+  activeTab = signal<'bucket' | 'itinerary' | 'suggestions'>('bucket');
+
+  // Suggested Activities state
+  suggestedActivities = signal<CityActivity[]>([]);
+  loadingSuggestions = signal(false);
+  selectedSuggestionCategory = signal<string | null>(null);
   selectedCategory = signal<string | null>(null);
 
   // Photo Dialog state
@@ -1256,10 +1585,24 @@ export class DestinationDetailComponent implements OnInit {
       .reduce((sum, a) => sum + (a.estimatedCost || 0), 0);
   });
 
+  filteredSuggestions = computed(() => {
+    const suggestions = this.suggestedActivities();
+    const category = this.selectedSuggestionCategory();
+    if (!category) return suggestions;
+    return suggestions.filter(s => s.category === category);
+  });
+
+  getUniqueSuggestionCategories = computed(() => {
+    const suggestions = this.suggestedActivities();
+    const categories = new Set(suggestions.map(s => s.category).filter(Boolean));
+    return Array.from(categories) as string[];
+  });
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private destinationsService: DestinationsService,
+    private locationsService: LocationsService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -1275,6 +1618,10 @@ export class DestinationDetailComponent implements OnInit {
       next: (destination) => {
         this.destination.set(destination);
         this.loading.set(false);
+        // Load suggested activities for this city
+        if (destination.city?.id) {
+          this.loadSuggestedActivities(destination.city.id);
+        }
       },
       error: () => {
         this.snackBar.open('Failed to load destination', 'Close', { duration: 3000 });
@@ -1283,8 +1630,55 @@ export class DestinationDetailComponent implements OnInit {
     });
   }
 
-  setActiveTab(tab: 'bucket' | 'itinerary'): void {
+  loadSuggestedActivities(cityId: number): void {
+    this.loadingSuggestions.set(true);
+    this.locationsService.getCityActivities(cityId).subscribe({
+      next: (activities) => {
+        this.suggestedActivities.set(activities);
+        this.loadingSuggestions.set(false);
+      },
+      error: () => {
+        this.loadingSuggestions.set(false);
+      }
+    });
+  }
+
+  setActiveTab(tab: 'bucket' | 'itinerary' | 'suggestions'): void {
     this.activeTab.set(tab);
+  }
+
+  setSelectedSuggestionCategory(category: string | null): void {
+    this.selectedSuggestionCategory.set(category);
+  }
+
+  addSuggestionToItinerary(suggestion: CityActivity): void {
+    const dest = this.destination();
+    if (!dest) return;
+
+    const data: CreateActivityRequest = {
+      destinationId: dest.id,
+      name: suggestion.name,
+      description: suggestion.description || undefined,
+      category: suggestion.category,
+      estimatedCost: suggestion.estimatedCost || undefined,
+      currency: suggestion.currency || '$'
+    };
+
+    this.destinationsService.createActivity(data).subscribe({
+      next: (activity) => {
+        const activities = [...(dest.activities || []), activity];
+        this.destination.set({ ...dest, activities });
+        this.snackBar.open(`Added "${suggestion.name}" to your itinerary!`, 'Close', { duration: 3000 });
+      },
+      error: () => {
+        this.snackBar.open('Failed to add activity', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  isActivityInItinerary(suggestion: CityActivity): boolean {
+    const activities = this.destination()?.activities || [];
+    return activities.some(a => a.name.toLowerCase() === suggestion.name.toLowerCase());
   }
 
   setSelectedCategory(category: string | null): void {

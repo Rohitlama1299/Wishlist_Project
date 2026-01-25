@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { Continent } from '../entities/continent.entity';
 import { Country } from '../entities/country.entity';
 import { City } from '../entities/city.entity';
+import { CityActivity } from '../entities/city-activity.entity';
 import { User } from '../entities/user.entity';
 import { Destination } from '../entities/destination.entity';
 import { Photo } from '../entities/photo.entity';
@@ -413,7 +414,16 @@ const dbConfig = process.env.DATABASE_URL
   ? {
       type: 'postgres' as const,
       url: process.env.DATABASE_URL,
-      entities: [User, Continent, Country, City, Destination, Photo, Activity],
+      entities: [
+        User,
+        Continent,
+        Country,
+        City,
+        CityActivity,
+        Destination,
+        Photo,
+        Activity,
+      ],
       synchronize: true,
       ssl: { rejectUnauthorized: false },
     }
@@ -424,7 +434,16 @@ const dbConfig = process.env.DATABASE_URL
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'password',
       database: process.env.DB_NAME || 'travel_wishlist',
-      entities: [User, Continent, Country, City, Destination, Photo, Activity],
+      entities: [
+        User,
+        Continent,
+        Country,
+        City,
+        CityActivity,
+        Destination,
+        Photo,
+        Activity,
+      ],
       synchronize: true,
     };
 
@@ -1203,6 +1222,195 @@ const citiesData = [
   { name: 'Port Vila', country: 'Vanuatu', lat: -17.7334, lng: 168.322 },
 ];
 
+// Curated activities for popular cities
+// Categories: sightseeing, food, adventure, culture, nature, nightlife, shopping
+interface ActivityData {
+  name: string;
+  description: string;
+  category: string;
+  estimatedCost: number;
+  duration: string;
+}
+
+const cityActivities: Record<string, ActivityData[]> = {
+  Tokyo: [
+    { name: 'Visit Senso-ji Temple', description: 'Explore Tokyo\'s oldest and most significant Buddhist temple in Asakusa', category: 'culture', estimatedCost: 0, duration: '2-3 hours' },
+    { name: 'Shibuya Crossing Experience', description: 'Walk through the world\'s busiest pedestrian crossing', category: 'sightseeing', estimatedCost: 0, duration: '1 hour' },
+    { name: 'Tsukiji Outer Market Food Tour', description: 'Sample fresh sushi, tamagoyaki, and other Japanese delicacies', category: 'food', estimatedCost: 50, duration: '3 hours' },
+    { name: 'Tokyo Skytree Observation', description: 'Enjoy panoramic views from Japan\'s tallest structure', category: 'sightseeing', estimatedCost: 25, duration: '2 hours' },
+    { name: 'Harajuku Street Fashion Walk', description: 'Explore the colorful youth fashion district and Takeshita Street', category: 'shopping', estimatedCost: 0, duration: '2-3 hours' },
+    { name: 'Robot Restaurant Show', description: 'Experience the famous neon-lit robot cabaret show in Shinjuku', category: 'nightlife', estimatedCost: 80, duration: '2 hours' },
+    { name: 'Meiji Shrine Visit', description: 'Find peace in this Shinto shrine surrounded by forest', category: 'culture', estimatedCost: 0, duration: '1-2 hours' },
+    { name: 'Ramen Tasting Tour', description: 'Try different styles of ramen from Tokyo\'s best shops', category: 'food', estimatedCost: 30, duration: '2 hours' },
+  ],
+  Paris: [
+    { name: 'Eiffel Tower Visit', description: 'Ascend the iconic iron lattice tower for stunning city views', category: 'sightseeing', estimatedCost: 30, duration: '2-3 hours' },
+    { name: 'Louvre Museum Tour', description: 'Explore the world\'s largest art museum, home to the Mona Lisa', category: 'culture', estimatedCost: 20, duration: '4-5 hours' },
+    { name: 'Montmartre Walking Tour', description: 'Wander through the artistic hilltop neighborhood and visit Sacré-Cœur', category: 'sightseeing', estimatedCost: 0, duration: '3 hours' },
+    { name: 'Seine River Cruise', description: 'Glide past Paris landmarks on an evening river cruise', category: 'sightseeing', estimatedCost: 20, duration: '1.5 hours' },
+    { name: 'French Pastry Class', description: 'Learn to make croissants and macarons from a French chef', category: 'food', estimatedCost: 100, duration: '3 hours' },
+    { name: 'Champs-Élysées Shopping', description: 'Shop at luxury boutiques on the famous avenue', category: 'shopping', estimatedCost: 0, duration: '3-4 hours' },
+    { name: 'Wine Tasting in Le Marais', description: 'Sample French wines in a historic wine cellar', category: 'food', estimatedCost: 50, duration: '2 hours' },
+    { name: 'Moulin Rouge Show', description: 'Watch the legendary cabaret show in Pigalle', category: 'nightlife', estimatedCost: 120, duration: '2.5 hours' },
+  ],
+  'New York City': [
+    { name: 'Statue of Liberty & Ellis Island', description: 'Visit America\'s iconic symbol of freedom and the immigration museum', category: 'sightseeing', estimatedCost: 25, duration: '4-5 hours' },
+    { name: 'Central Park Bike Tour', description: 'Cycle through Manhattan\'s urban oasis', category: 'nature', estimatedCost: 40, duration: '2-3 hours' },
+    { name: 'Broadway Show', description: 'Experience world-class theater in the Theater District', category: 'culture', estimatedCost: 150, duration: '3 hours' },
+    { name: 'Empire State Building', description: 'Take in 360-degree views from the 86th floor observatory', category: 'sightseeing', estimatedCost: 45, duration: '2 hours' },
+    { name: 'Brooklyn Pizza Tour', description: 'Taste authentic New York pizza at legendary pizzerias', category: 'food', estimatedCost: 60, duration: '3 hours' },
+    { name: 'High Line Walk', description: 'Stroll along the elevated park built on historic rail lines', category: 'nature', estimatedCost: 0, duration: '1.5 hours' },
+    { name: 'Met Museum Visit', description: 'Explore one of the world\'s greatest art collections', category: 'culture', estimatedCost: 30, duration: '4 hours' },
+    { name: 'Jazz Club in Harlem', description: 'Experience live jazz at a legendary Harlem venue', category: 'nightlife', estimatedCost: 30, duration: '2-3 hours' },
+  ],
+  London: [
+    { name: 'Tower of London Tour', description: 'Discover 1000 years of history and see the Crown Jewels', category: 'culture', estimatedCost: 35, duration: '3-4 hours' },
+    { name: 'British Museum Visit', description: 'Explore world history through millions of artifacts', category: 'culture', estimatedCost: 0, duration: '3-4 hours' },
+    { name: 'London Eye Ride', description: 'See London\'s skyline from the giant observation wheel', category: 'sightseeing', estimatedCost: 35, duration: '1 hour' },
+    { name: 'Borough Market Food Tour', description: 'Sample artisan foods at London\'s oldest food market', category: 'food', estimatedCost: 40, duration: '2-3 hours' },
+    { name: 'West End Theatre Show', description: 'Watch a world-class musical or play', category: 'culture', estimatedCost: 80, duration: '3 hours' },
+    { name: 'Buckingham Palace & Changing of Guard', description: 'Watch the famous ceremony at the Royal residence', category: 'sightseeing', estimatedCost: 0, duration: '1.5 hours' },
+    { name: 'Afternoon Tea Experience', description: 'Enjoy traditional British tea service at a luxury hotel', category: 'food', estimatedCost: 70, duration: '2 hours' },
+    { name: 'Camden Market Exploration', description: 'Browse eclectic stalls for fashion, food, and antiques', category: 'shopping', estimatedCost: 0, duration: '2-3 hours' },
+  ],
+  Dubai: [
+    { name: 'Burj Khalifa At The Top', description: 'Visit the observation deck of the world\'s tallest building', category: 'sightseeing', estimatedCost: 50, duration: '2 hours' },
+    { name: 'Desert Safari with BBQ', description: 'Dune bashing, camel riding, and dinner under the stars', category: 'adventure', estimatedCost: 80, duration: '6 hours' },
+    { name: 'Dubai Mall & Fountain Show', description: 'Shop at the world\'s largest mall and watch the fountain spectacle', category: 'shopping', estimatedCost: 0, duration: '4 hours' },
+    { name: 'Palm Jumeirah Yacht Tour', description: 'Cruise around the iconic palm-shaped island', category: 'sightseeing', estimatedCost: 100, duration: '2 hours' },
+    { name: 'Old Dubai Walking Tour', description: 'Explore the historic Al Fahidi district and spice souks', category: 'culture', estimatedCost: 20, duration: '3 hours' },
+    { name: 'Skydiving over Palm Jumeirah', description: 'Tandem skydive with views of Dubai\'s coastline', category: 'adventure', estimatedCost: 600, duration: '3 hours' },
+    { name: 'Authentic Emirati Dinner', description: 'Taste traditional Emirati cuisine at a local restaurant', category: 'food', estimatedCost: 60, duration: '2 hours' },
+    { name: 'Dubai Frame Visit', description: 'See old and new Dubai from this architectural landmark', category: 'sightseeing', estimatedCost: 15, duration: '1.5 hours' },
+  ],
+  Sydney: [
+    { name: 'Sydney Opera House Tour', description: 'Go behind the scenes of the iconic architectural masterpiece', category: 'culture', estimatedCost: 45, duration: '2 hours' },
+    { name: 'Bondi to Coogee Coastal Walk', description: 'Scenic cliff-top walk with stunning ocean views', category: 'nature', estimatedCost: 0, duration: '2-3 hours' },
+    { name: 'Sydney Harbour Bridge Climb', description: 'Climb to the summit for panoramic harbor views', category: 'adventure', estimatedCost: 200, duration: '3.5 hours' },
+    { name: 'Taronga Zoo Visit', description: 'See Australian wildlife with harbor backdrop', category: 'nature', estimatedCost: 50, duration: '4 hours' },
+    { name: 'The Rocks Walking Tour', description: 'Discover Sydney\'s historic neighborhood and weekend markets', category: 'culture', estimatedCost: 0, duration: '2 hours' },
+    { name: 'Manly Beach Ferry & Day', description: 'Take the scenic ferry to Manly for beach and dining', category: 'nature', estimatedCost: 20, duration: 'Full day' },
+    { name: 'Seafood at Sydney Fish Market', description: 'Sample the freshest seafood at the Southern Hemisphere\'s largest market', category: 'food', estimatedCost: 40, duration: '2 hours' },
+    { name: 'Sunset Sail on the Harbour', description: 'Cruise Sydney Harbour as the sun sets behind the city', category: 'sightseeing', estimatedCost: 80, duration: '2 hours' },
+  ],
+  Rome: [
+    { name: 'Colosseum & Roman Forum Tour', description: 'Step back in time at ancient Rome\'s greatest monuments', category: 'culture', estimatedCost: 25, duration: '3-4 hours' },
+    { name: 'Vatican Museums & Sistine Chapel', description: 'Marvel at Michelangelo\'s masterpiece and papal art collections', category: 'culture', estimatedCost: 30, duration: '4-5 hours' },
+    { name: 'Trastevere Food Tour', description: 'Taste authentic Roman cuisine in the charming neighborhood', category: 'food', estimatedCost: 70, duration: '3 hours' },
+    { name: 'Trevi Fountain & Spanish Steps', description: 'Visit Rome\'s most beautiful baroque landmarks', category: 'sightseeing', estimatedCost: 0, duration: '2 hours' },
+    { name: 'Pasta Making Class', description: 'Learn to make fresh pasta with a local Italian chef', category: 'food', estimatedCost: 80, duration: '3 hours' },
+    { name: 'Pantheon Visit', description: 'Explore the best-preserved ancient Roman building', category: 'culture', estimatedCost: 0, duration: '1 hour' },
+    { name: 'Aperitivo in Piazza Navona', description: 'Enjoy evening drinks at one of Rome\'s most beautiful squares', category: 'nightlife', estimatedCost: 20, duration: '2 hours' },
+    { name: 'Borghese Gallery Visit', description: 'See masterpieces by Bernini and Caravaggio', category: 'culture', estimatedCost: 20, duration: '2 hours' },
+  ],
+  Barcelona: [
+    { name: 'Sagrada Familia Tour', description: 'Explore Gaudí\'s unfinished masterpiece basilica', category: 'culture', estimatedCost: 30, duration: '2-3 hours' },
+    { name: 'Park Güell Visit', description: 'Wander through Gaudí\'s whimsical mosaic park', category: 'sightseeing', estimatedCost: 10, duration: '2 hours' },
+    { name: 'La Boqueria Market Tour', description: 'Taste your way through Barcelona\'s famous food market', category: 'food', estimatedCost: 30, duration: '2 hours' },
+    { name: 'Gothic Quarter Walking Tour', description: 'Get lost in medieval streets and hidden plazas', category: 'culture', estimatedCost: 0, duration: '2-3 hours' },
+    { name: 'Barceloneta Beach Day', description: 'Relax on the city\'s most popular beach', category: 'nature', estimatedCost: 0, duration: 'Half day' },
+    { name: 'Flamenco Show', description: 'Experience passionate Spanish flamenco dancing', category: 'culture', estimatedCost: 45, duration: '1.5 hours' },
+    { name: 'Tapas Hopping Tour', description: 'Sample tapas at traditional bars in El Born', category: 'food', estimatedCost: 60, duration: '3 hours' },
+    { name: 'Casa Batlló Visit', description: 'Tour Gaudí\'s stunning dragon-inspired mansion', category: 'sightseeing', estimatedCost: 35, duration: '1.5 hours' },
+  ],
+  Bangkok: [
+    { name: 'Grand Palace & Wat Phra Kaew', description: 'Visit Thailand\'s most sacred Buddhist temple and royal palace', category: 'culture', estimatedCost: 15, duration: '3 hours' },
+    { name: 'Street Food Tour', description: 'Sample pad thai, mango sticky rice, and more from street vendors', category: 'food', estimatedCost: 30, duration: '3 hours' },
+    { name: 'Floating Market Day Trip', description: 'Experience traditional commerce at Damnoen Saduak', category: 'culture', estimatedCost: 40, duration: 'Full day' },
+    { name: 'Wat Arun at Sunset', description: 'Watch the Temple of Dawn glow golden at dusk', category: 'sightseeing', estimatedCost: 5, duration: '2 hours' },
+    { name: 'Thai Cooking Class', description: 'Learn to cook authentic Thai dishes', category: 'food', estimatedCost: 40, duration: '4 hours' },
+    { name: 'Chatuchak Weekend Market', description: 'Shop at one of the world\'s largest outdoor markets', category: 'shopping', estimatedCost: 0, duration: '4-5 hours' },
+    { name: 'Rooftop Bar Experience', description: 'Enjoy cocktails with skyline views at a sky bar', category: 'nightlife', estimatedCost: 30, duration: '2-3 hours' },
+    { name: 'Thai Massage', description: 'Experience a traditional Thai massage treatment', category: 'culture', estimatedCost: 20, duration: '2 hours' },
+  ],
+  Singapore: [
+    { name: 'Gardens by the Bay', description: 'Explore futuristic Supertrees and cloud forest domes', category: 'nature', estimatedCost: 30, duration: '3-4 hours' },
+    { name: 'Marina Bay Sands SkyPark', description: 'Take in panoramic views from the iconic rooftop', category: 'sightseeing', estimatedCost: 25, duration: '1-2 hours' },
+    { name: 'Hawker Center Food Tour', description: 'Taste legendary local dishes like chicken rice and laksa', category: 'food', estimatedCost: 20, duration: '2-3 hours' },
+    { name: 'Sentosa Island Day', description: 'Enjoy beaches, attractions, and Universal Studios', category: 'adventure', estimatedCost: 80, duration: 'Full day' },
+    { name: 'Chinatown Heritage Walk', description: 'Explore temples, shophouses, and traditional trades', category: 'culture', estimatedCost: 0, duration: '2 hours' },
+    { name: 'Night Safari', description: 'See nocturnal animals on the world\'s first night zoo', category: 'nature', estimatedCost: 50, duration: '4 hours' },
+    { name: 'Clarke Quay Nightlife', description: 'Bar hop along the illuminated riverside', category: 'nightlife', estimatedCost: 50, duration: '3-4 hours' },
+    { name: 'Orchard Road Shopping', description: 'Shop at Singapore\'s premier retail destination', category: 'shopping', estimatedCost: 0, duration: '3-4 hours' },
+  ],
+  Bali: [
+    { name: 'Ubud Rice Terraces Trek', description: 'Walk through the stunning Tegallalang rice paddies', category: 'nature', estimatedCost: 15, duration: '2-3 hours' },
+    { name: 'Uluwatu Temple Sunset', description: 'Watch traditional Kecak dance as the sun sets', category: 'culture', estimatedCost: 15, duration: '3 hours' },
+    { name: 'Balinese Cooking Class', description: 'Learn to cook traditional Balinese dishes', category: 'food', estimatedCost: 35, duration: '4 hours' },
+    { name: 'Surfing Lesson in Kuta', description: 'Learn to surf on Bali\'s famous beginner waves', category: 'adventure', estimatedCost: 40, duration: '2 hours' },
+    { name: 'Monkey Forest Sanctuary', description: 'Walk among hundreds of long-tailed macaques', category: 'nature', estimatedCost: 5, duration: '2 hours' },
+    { name: 'Mount Batur Sunrise Trek', description: 'Hike an active volcano for spectacular sunrise views', category: 'adventure', estimatedCost: 60, duration: '6 hours' },
+    { name: 'Spa & Wellness Day', description: 'Indulge in traditional Balinese spa treatments', category: 'culture', estimatedCost: 50, duration: '3 hours' },
+    { name: 'Seminyak Beach Club', description: 'Lounge at a stylish beach club with sunset cocktails', category: 'nightlife', estimatedCost: 40, duration: '4 hours' },
+  ],
+  'Cape Town': [
+    { name: 'Table Mountain Cable Car', description: 'Ride to the summit for breathtaking city and ocean views', category: 'sightseeing', estimatedCost: 25, duration: '3 hours' },
+    { name: 'Cape Peninsula Day Trip', description: 'Visit Cape Point, penguins at Boulders Beach, and scenic Chapman\'s Peak', category: 'nature', estimatedCost: 80, duration: 'Full day' },
+    { name: 'Robben Island Tour', description: 'Learn about South Africa\'s history where Mandela was imprisoned', category: 'culture', estimatedCost: 30, duration: '4 hours' },
+    { name: 'Cape Winelands Tour', description: 'Taste world-class wines in Stellenbosch and Franschhoek', category: 'food', estimatedCost: 90, duration: 'Full day' },
+    { name: 'V&A Waterfront', description: 'Shop, dine, and explore at the vibrant harbor complex', category: 'shopping', estimatedCost: 0, duration: '3-4 hours' },
+    { name: 'Lion\'s Head Sunrise Hike', description: 'Climb the iconic peak for panoramic sunrise views', category: 'adventure', estimatedCost: 0, duration: '3 hours' },
+    { name: 'Bo-Kaap Walking Tour', description: 'Explore the colorful Cape Malay neighborhood', category: 'culture', estimatedCost: 20, duration: '2 hours' },
+    { name: 'Shark Cage Diving', description: 'Get up close with great white sharks in Gansbaai', category: 'adventure', estimatedCost: 150, duration: 'Full day' },
+  ],
+  'Rio de Janeiro': [
+    { name: 'Christ the Redeemer Visit', description: 'See the iconic statue atop Corcovado Mountain', category: 'sightseeing', estimatedCost: 25, duration: '3 hours' },
+    { name: 'Sugarloaf Mountain Cable Car', description: 'Ride to the peak for stunning bay views', category: 'sightseeing', estimatedCost: 30, duration: '2-3 hours' },
+    { name: 'Copacabana Beach Day', description: 'Relax on Rio\'s most famous beach', category: 'nature', estimatedCost: 0, duration: 'Half day' },
+    { name: 'Favela Walking Tour', description: 'Explore the vibrant culture of Rio\'s hillside communities', category: 'culture', estimatedCost: 40, duration: '3 hours' },
+    { name: 'Samba Show & Dinner', description: 'Experience authentic Brazilian music and dance', category: 'nightlife', estimatedCost: 70, duration: '3 hours' },
+    { name: 'Tijuca Forest Hike', description: 'Trek through the world\'s largest urban rainforest', category: 'nature', estimatedCost: 30, duration: '4 hours' },
+    { name: 'Churrascaria Experience', description: 'Feast at an all-you-can-eat Brazilian steakhouse', category: 'food', estimatedCost: 50, duration: '2 hours' },
+    { name: 'Hang Gliding over Rio', description: 'Soar over the city and beaches from Pedra Bonita', category: 'adventure', estimatedCost: 150, duration: '2 hours' },
+  ],
+  'Machu Picchu': [
+    { name: 'Classic Machu Picchu Tour', description: 'Guided tour of the ancient Incan citadel', category: 'culture', estimatedCost: 70, duration: '4-5 hours' },
+    { name: 'Huayna Picchu Climb', description: 'Hike the iconic peak overlooking the ruins', category: 'adventure', estimatedCost: 20, duration: '3 hours' },
+    { name: 'Sun Gate Trek', description: 'Walk the final stretch of the Inca Trail to Intipunku', category: 'adventure', estimatedCost: 0, duration: '2 hours' },
+    { name: 'Sunrise at Machu Picchu', description: 'Watch the sun rise over the misty mountains', category: 'sightseeing', estimatedCost: 0, duration: '2 hours' },
+  ],
+  Kyoto: [
+    { name: 'Fushimi Inari Shrine', description: 'Walk through thousands of vermillion torii gates', category: 'culture', estimatedCost: 0, duration: '2-3 hours' },
+    { name: 'Arashiyama Bamboo Grove', description: 'Stroll through the towering bamboo forest', category: 'nature', estimatedCost: 0, duration: '2 hours' },
+    { name: 'Geisha District Walk', description: 'Explore Gion and spot geiko and maiko', category: 'culture', estimatedCost: 0, duration: '2-3 hours' },
+    { name: 'Traditional Tea Ceremony', description: 'Experience the art of Japanese tea', category: 'culture', estimatedCost: 40, duration: '1.5 hours' },
+    { name: 'Kinkaku-ji Golden Pavilion', description: 'Visit the stunning gold-leaf covered temple', category: 'sightseeing', estimatedCost: 5, duration: '1.5 hours' },
+    { name: 'Nishiki Market Food Tour', description: 'Sample Kyoto specialties at the kitchen of Kyoto', category: 'food', estimatedCost: 30, duration: '2 hours' },
+    { name: 'Kimono Rental Experience', description: 'Dress in traditional kimono and explore the city', category: 'culture', estimatedCost: 50, duration: '4 hours' },
+    { name: 'Philosopher\'s Path Walk', description: 'Peaceful walk along the canal lined with cherry trees', category: 'nature', estimatedCost: 0, duration: '1.5 hours' },
+  ],
+  Amsterdam: [
+    { name: 'Anne Frank House', description: 'Visit the moving WWII hiding place and museum', category: 'culture', estimatedCost: 15, duration: '1.5 hours' },
+    { name: 'Van Gogh Museum', description: 'See the world\'s largest collection of Van Gogh\'s works', category: 'culture', estimatedCost: 20, duration: '2-3 hours' },
+    { name: 'Canal Cruise', description: 'Glide through the UNESCO-listed canal ring', category: 'sightseeing', estimatedCost: 15, duration: '1 hour' },
+    { name: 'Bike Tour of the City', description: 'Explore Amsterdam like a local on two wheels', category: 'sightseeing', estimatedCost: 35, duration: '3 hours' },
+    { name: 'Jordaan Neighborhood Walk', description: 'Discover charming streets, boutiques, and cafes', category: 'culture', estimatedCost: 0, duration: '2 hours' },
+    { name: 'Heineken Experience', description: 'Interactive tour of the famous brewery', category: 'food', estimatedCost: 20, duration: '2 hours' },
+    { name: 'Vondelpark Picnic', description: 'Relax in Amsterdam\'s beloved green space', category: 'nature', estimatedCost: 10, duration: '2 hours' },
+    { name: 'Red Light District Walking Tour', description: 'Learn the history of this famous neighborhood', category: 'culture', estimatedCost: 20, duration: '1.5 hours' },
+  ],
+  Istanbul: [
+    { name: 'Hagia Sophia Visit', description: 'Explore the stunning Byzantine cathedral turned mosque', category: 'culture', estimatedCost: 25, duration: '2 hours' },
+    { name: 'Blue Mosque', description: 'Admire the iconic domed mosque with blue Iznik tiles', category: 'culture', estimatedCost: 0, duration: '1 hour' },
+    { name: 'Grand Bazaar Shopping', description: 'Get lost in one of the world\'s oldest covered markets', category: 'shopping', estimatedCost: 0, duration: '3 hours' },
+    { name: 'Bosphorus Cruise', description: 'Sail between Europe and Asia on the strait', category: 'sightseeing', estimatedCost: 20, duration: '2 hours' },
+    { name: 'Turkish Bath Experience', description: 'Relax in a traditional hammam', category: 'culture', estimatedCost: 50, duration: '2 hours' },
+    { name: 'Street Food Tour', description: 'Taste kebabs, baklava, and Turkish tea', category: 'food', estimatedCost: 40, duration: '3 hours' },
+    { name: 'Topkapi Palace Tour', description: 'Explore the opulent Ottoman sultans\' residence', category: 'culture', estimatedCost: 20, duration: '3 hours' },
+    { name: 'Whirling Dervishes Show', description: 'Watch the mesmerizing Sufi spiritual ceremony', category: 'culture', estimatedCost: 30, duration: '1.5 hours' },
+  ],
+  Prague: [
+    { name: 'Prague Castle Complex', description: 'Tour the largest ancient castle in the world', category: 'culture', estimatedCost: 15, duration: '3-4 hours' },
+    { name: 'Charles Bridge Walk', description: 'Stroll across the iconic medieval stone bridge', category: 'sightseeing', estimatedCost: 0, duration: '1 hour' },
+    { name: 'Old Town Square & Astronomical Clock', description: 'Watch the famous clock\'s hourly show', category: 'sightseeing', estimatedCost: 0, duration: '1-2 hours' },
+    { name: 'Czech Beer Tasting', description: 'Sample local brews in historic beer halls', category: 'food', estimatedCost: 25, duration: '2 hours' },
+    { name: 'Jewish Quarter Tour', description: 'Explore the historic synagogues and cemetery', category: 'culture', estimatedCost: 20, duration: '2-3 hours' },
+    { name: 'Petřín Hill & Tower', description: 'Climb the mini Eiffel Tower for city views', category: 'sightseeing', estimatedCost: 8, duration: '2 hours' },
+    { name: 'Traditional Czech Dinner', description: 'Feast on svíčková, trdelník, and more', category: 'food', estimatedCost: 30, duration: '2 hours' },
+    { name: 'Jazz Club Night', description: 'Enjoy live jazz in an atmospheric cellar club', category: 'nightlife', estimatedCost: 20, duration: '2-3 hours' },
+  ],
+};
+
 async function seed() {
   try {
     await dataSource.initialize();
@@ -1302,6 +1510,38 @@ async function seed() {
     console.log(
       `Seeded ${cityCount} new cities, updated ${updatedCount} existing cities`,
     );
+
+    // Seed city activities
+    const cityActivityRepo = dataSource.getRepository(CityActivity);
+    await cityActivityRepo
+      .createQueryBuilder()
+      .delete()
+      .from(CityActivity)
+      .execute();
+
+    let activityCount = 0;
+    for (const [cityName, activities] of Object.entries(cityActivities)) {
+      // Find the city
+      const city = await cityRepo.findOne({ where: { name: cityName } });
+      if (city) {
+        for (let i = 0; i < activities.length; i++) {
+          const activityData = activities[i];
+          const activity = cityActivityRepo.create({
+            name: activityData.name,
+            description: activityData.description,
+            category: activityData.category,
+            estimatedCost: activityData.estimatedCost,
+            duration: activityData.duration,
+            currency: 'USD',
+            sortOrder: i,
+            cityId: city.id,
+          });
+          await cityActivityRepo.save(activity);
+          activityCount++;
+        }
+      }
+    }
+    console.log(`Seeded ${activityCount} city activities`);
 
     console.log('Seeding completed successfully!');
     await dataSource.destroy();
