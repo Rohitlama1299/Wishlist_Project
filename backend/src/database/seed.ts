@@ -2270,6 +2270,68 @@ const cityActivities: Record<string, ActivityData[]> = {
   ],
 };
 
+// Generate activities for cities that don't have curated ones
+function generateDefaultActivities(
+  cityName: string,
+  countryName: string,
+): ActivityData[] {
+  return [
+    {
+      name: `Explore ${cityName} Old Town`,
+      description: `Wander through the historic center and discover the charm of ${cityName}`,
+      category: 'sightseeing',
+      estimatedCost: 0,
+      duration: '2-3 hours',
+    },
+    {
+      name: `${cityName} Walking Tour`,
+      description: `Take a guided walking tour to learn about the history and culture of ${cityName}`,
+      category: 'culture',
+      estimatedCost: 25,
+      duration: '3 hours',
+    },
+    {
+      name: `Local Food Experience`,
+      description: `Sample authentic ${countryName} cuisine at local restaurants and markets`,
+      category: 'food',
+      estimatedCost: 30,
+      duration: '2 hours',
+    },
+    {
+      name: `Visit Local Markets`,
+      description: `Explore bustling local markets for souvenirs and authentic goods`,
+      category: 'shopping',
+      estimatedCost: 0,
+      duration: '2 hours',
+    },
+    {
+      name: `${cityName} Viewpoint`,
+      description: `Find the best panoramic views of ${cityName} and surrounding areas`,
+      category: 'sightseeing',
+      estimatedCost: 0,
+      duration: '1-2 hours',
+    },
+    {
+      name: `Museum & Gallery Visit`,
+      description: `Discover local art, history, and culture at ${cityName}'s museums`,
+      category: 'culture',
+      estimatedCost: 15,
+      duration: '2-3 hours',
+    },
+  ];
+}
+
+// Get activities for a city - returns curated if available, otherwise generates defaults
+function getActivitiesForCity(
+  cityName: string,
+  countryName: string,
+): ActivityData[] {
+  if (cityActivities[cityName]) {
+    return cityActivities[cityName];
+  }
+  return generateDefaultActivities(cityName, countryName);
+}
+
 async function seed() {
   try {
     await dataSource.initialize();
@@ -2370,7 +2432,7 @@ async function seed() {
       `Seeded ${cityCount} new cities, updated ${updatedCount} existing cities`,
     );
 
-    // Seed city activities
+    // Seed city activities for ALL cities
     const cityActivityRepo = dataSource.getRepository(CityActivity);
     await cityActivityRepo
       .createQueryBuilder()
@@ -2379,10 +2441,19 @@ async function seed() {
       .execute();
 
     let activityCount = 0;
-    for (const [cityName, activities] of Object.entries(cityActivities)) {
-      // Find the city
-      const city = await cityRepo.findOne({ where: { name: cityName } });
+    let curatedCount = 0;
+    let generatedCount = 0;
+
+    // Get all cities and seed activities for each
+    for (const cityData of citiesData) {
+      const city = await cityRepo.findOne({ where: { name: cityData.name } });
       if (city) {
+        const activities = getActivitiesForCity(
+          cityData.name,
+          cityData.country,
+        );
+        const isCurated = !!cityActivities[cityData.name];
+
         for (let i = 0; i < activities.length; i++) {
           const activityData = activities[i];
           const activity = cityActivityRepo.create({
@@ -2398,9 +2469,17 @@ async function seed() {
           await cityActivityRepo.save(activity);
           activityCount++;
         }
+
+        if (isCurated) {
+          curatedCount++;
+        } else {
+          generatedCount++;
+        }
       }
     }
-    console.log(`Seeded ${activityCount} city activities`);
+    console.log(
+      `Seeded ${activityCount} city activities (${curatedCount} curated cities, ${generatedCount} auto-generated)`,
+    );
 
     console.log('Seeding completed successfully!');
     await dataSource.destroy();
