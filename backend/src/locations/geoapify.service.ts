@@ -11,7 +11,15 @@ interface GeoapifyPlace {
         opening_hours?: string;
         fee?: string;
         website?: string;
+        image?: string;
+        wikimedia_commons?: string;
+        wikidata?: string;
       };
+    };
+    wiki_and_media?: {
+      image?: string;
+      wikimedia_commons?: string;
+      wikidata?: string;
     };
     address_line1?: string;
     address_line2?: string;
@@ -32,6 +40,7 @@ export interface PlaceActivity {
   estimatedCost: number;
   duration: string;
   address?: string;
+  imageUrl?: string;
 }
 
 @Injectable()
@@ -103,6 +112,18 @@ export class GeoapifyService {
     'heritage',
     'religion.place_of_worship',
   ];
+
+  // Category-based fallback images from Unsplash
+  private readonly categoryImages: Record<string, string> = {
+    sightseeing: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&q=80',
+    culture: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=400&q=80',
+    food: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80',
+    nature: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&q=80',
+    adventure: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&q=80',
+    nightlife: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&q=80',
+    shopping: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80',
+    relaxation: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&q=80',
+  };
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>('GEOAPIFY_API_KEY') || '';
@@ -184,6 +205,9 @@ export class GeoapifyService {
       // Estimate duration based on category
       const duration = this.estimateDuration(category);
 
+      // Get image URL
+      const imageUrl = this.getImageUrl(place, category);
+
       activities.push({
         name,
         description,
@@ -191,11 +215,35 @@ export class GeoapifyService {
         estimatedCost,
         duration,
         address: place.properties.address_line2,
+        imageUrl,
       });
     }
 
     // Sort by relevance and limit to top activities
     return activities.slice(0, 15);
+  }
+
+  private getImageUrl(place: GeoapifyPlace, category: string): string {
+    // Try to get image from Wikimedia Commons
+    const wikimediaCommons =
+      place.properties.wiki_and_media?.wikimedia_commons ||
+      place.properties.datasource?.raw?.wikimedia_commons;
+
+    if (wikimediaCommons) {
+      // Extract the category/file name and construct Wikimedia Commons thumbnail URL
+      const commonsFile = wikimediaCommons.replace('Category:', '').replace(/ /g, '_');
+      // Use Wikimedia Commons API to get a thumbnail
+      return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(commonsFile)}?width=400`;
+    }
+
+    // Try direct image from datasource
+    const directImage = place.properties.datasource?.raw?.image;
+    if (directImage && directImage.startsWith('http')) {
+      return directImage;
+    }
+
+    // Fallback to category-based image
+    return this.categoryImages[category] || this.categoryImages.sightseeing;
   }
 
   private mapCategory(categories: string[]): string {

@@ -212,6 +212,7 @@ export class LocationsService {
           currency: 'USD',
           sortOrder: i,
           cityId: city.id,
+          imageUrl: place.imageUrl,
         });
 
         const saved = await this.cityActivityRepository.save(activity);
