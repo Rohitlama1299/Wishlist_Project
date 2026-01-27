@@ -76,6 +76,12 @@ export class LocationsController {
     return this.locationsService.getCityActivities(id);
   }
 
+  @Post('cities/:id/activities/refresh')
+  @UseGuards(JwtAuthGuard)
+  refreshCityActivities(@Param('id', ParseIntPipe) id: number) {
+    return this.locationsService.refreshCityActivities(id);
+  }
+
   @Post('cities')
   @UseGuards(JwtAuthGuard)
   createCity(@Body() createCityDto: CreateCityDto) {

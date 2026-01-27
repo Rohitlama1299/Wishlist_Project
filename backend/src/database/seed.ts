@@ -2270,67 +2270,8 @@ const cityActivities: Record<string, ActivityData[]> = {
   ],
 };
 
-// Generate activities for cities that don't have curated ones
-function generateDefaultActivities(
-  cityName: string,
-  countryName: string,
-): ActivityData[] {
-  return [
-    {
-      name: `Explore ${cityName} Old Town`,
-      description: `Wander through the historic center and discover the charm of ${cityName}`,
-      category: 'sightseeing',
-      estimatedCost: 0,
-      duration: '2-3 hours',
-    },
-    {
-      name: `${cityName} Walking Tour`,
-      description: `Take a guided walking tour to learn about the history and culture of ${cityName}`,
-      category: 'culture',
-      estimatedCost: 25,
-      duration: '3 hours',
-    },
-    {
-      name: `Local Food Experience`,
-      description: `Sample authentic ${countryName} cuisine at local restaurants and markets`,
-      category: 'food',
-      estimatedCost: 30,
-      duration: '2 hours',
-    },
-    {
-      name: `Visit Local Markets`,
-      description: `Explore bustling local markets for souvenirs and authentic goods`,
-      category: 'shopping',
-      estimatedCost: 0,
-      duration: '2 hours',
-    },
-    {
-      name: `${cityName} Viewpoint`,
-      description: `Find the best panoramic views of ${cityName} and surrounding areas`,
-      category: 'sightseeing',
-      estimatedCost: 0,
-      duration: '1-2 hours',
-    },
-    {
-      name: `Museum & Gallery Visit`,
-      description: `Discover local art, history, and culture at ${cityName}'s museums`,
-      category: 'culture',
-      estimatedCost: 15,
-      duration: '2-3 hours',
-    },
-  ];
-}
-
-// Get activities for a city - returns curated if available, otherwise generates defaults
-function getActivitiesForCity(
-  cityName: string,
-  countryName: string,
-): ActivityData[] {
-  if (cityActivities[cityName]) {
-    return cityActivities[cityName];
-  }
-  return generateDefaultActivities(cityName, countryName);
-}
+// NOTE: City activities are now fetched dynamically from Geoapify Places API
+// The cityActivities above are kept for reference but no longer seeded
 
 async function seed() {
   try {
@@ -2432,53 +2373,10 @@ async function seed() {
       `Seeded ${cityCount} new cities, updated ${updatedCount} existing cities`,
     );
 
-    // Seed city activities for ALL cities
-    const cityActivityRepo = dataSource.getRepository(CityActivity);
-    await cityActivityRepo
-      .createQueryBuilder()
-      .delete()
-      .from(CityActivity)
-      .execute();
-
-    let activityCount = 0;
-    let curatedCount = 0;
-    let generatedCount = 0;
-
-    // Get all cities and seed activities for each
-    for (const cityData of citiesData) {
-      const city = await cityRepo.findOne({ where: { name: cityData.name } });
-      if (city) {
-        const activities = getActivitiesForCity(
-          cityData.name,
-          cityData.country,
-        );
-        const isCurated = !!cityActivities[cityData.name];
-
-        for (let i = 0; i < activities.length; i++) {
-          const activityData = activities[i];
-          const activity = cityActivityRepo.create({
-            name: activityData.name,
-            description: activityData.description,
-            category: activityData.category,
-            estimatedCost: activityData.estimatedCost,
-            duration: activityData.duration,
-            currency: 'USD',
-            sortOrder: i,
-            cityId: city.id,
-          });
-          await cityActivityRepo.save(activity);
-          activityCount++;
-        }
-
-        if (isCurated) {
-          curatedCount++;
-        } else {
-          generatedCount++;
-        }
-      }
-    }
+    // City activities are now fetched dynamically from Geoapify API
+    // No need to seed activities - they will be fetched on-demand when users visit a city
     console.log(
-      `Seeded ${activityCount} city activities (${curatedCount} curated cities, ${generatedCount} auto-generated)`,
+      'City activities will be fetched dynamically from Geoapify API',
     );
 
     console.log('Seeding completed successfully!');
