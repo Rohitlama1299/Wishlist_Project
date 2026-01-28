@@ -17,7 +17,6 @@ import { DestinationsService } from '../../../core/services/destinations.service
 import { LocationsService } from '../../../core/services/locations.service';
 import { Destination, Photo, Activity, CreateActivityRequest, CityActivity } from '../../../models';
 import { environment } from '../../../../environments/environment';
-import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loader/skeleton-loader.component';
 import { fadeInUp, cardStagger, backdropAnimation, dialogAnimation } from '../../../animations/route.animations';
 
 const ACTIVITY_CATEGORIES = [
@@ -48,8 +47,7 @@ const ACTIVITY_CATEGORIES = [
     MatDialogModule,
     MatTabsModule,
     MatCheckboxModule,
-    MatSelectModule,
-    SkeletonLoaderComponent
+    MatSelectModule
   ],
   animations: [fadeInUp, cardStagger, backdropAnimation, dialogAnimation],
   template: `
