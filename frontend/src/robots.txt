@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wishlist-project-liard.vercel.app/sitemap.xml
