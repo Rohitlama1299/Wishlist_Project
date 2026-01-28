@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Continent, Country, City, CityActivity } from '../entities';
-import { GeoapifyService } from './geoapify.service';
+import { AmadeusService } from './amadeus.service';
 
 @Injectable()
 export class LocationsService {
@@ -17,7 +17,7 @@ export class LocationsService {
     private cityRepository: Repository<City>,
     @InjectRepository(CityActivity)
     private cityActivityRepository: Repository<CityActivity>,
-    private geoapifyService: GeoapifyService,
+    private amadeusService: AmadeusService,
   ) {}
 
   // Continents
@@ -177,42 +177,42 @@ export class LocationsService {
       order: { sortOrder: 'ASC', category: 'ASC' },
     });
 
-    // If no activities and city has coordinates, fetch from Geoapify
+    // If no activities and city has coordinates, fetch from Amadeus
     if (activities.length === 0 && city.latitude && city.longitude) {
-      this.logger.log(`Fetching activities from Geoapify for ${city.name}`);
+      this.logger.log(`Fetching activities from Amadeus for ${city.name}`);
       activities = await this.fetchAndSaveActivities(city);
     }
 
     return activities;
   }
 
-  // Fetch activities from Geoapify and save to database
+  // Fetch activities from Amadeus and save to database
   private async fetchAndSaveActivities(city: City): Promise<CityActivity[]> {
     try {
-      const places = await this.geoapifyService.getPlacesForCity(
+      const activities = await this.amadeusService.getActivitiesForCity(
         city.latitude!,
         city.longitude!,
         city.name,
       );
 
-      if (places.length === 0) {
+      if (activities.length === 0) {
         return [];
       }
 
       const savedActivities: CityActivity[] = [];
 
-      for (let i = 0; i < places.length; i++) {
-        const place = places[i];
+      for (let i = 0; i < activities.length; i++) {
+        const activityData = activities[i];
         const activity = this.cityActivityRepository.create({
-          name: place.name,
-          description: place.description,
-          category: place.category,
-          estimatedCost: place.estimatedCost,
-          duration: place.duration,
-          currency: 'USD',
+          name: activityData.name,
+          description: activityData.description,
+          category: activityData.category,
+          estimatedCost: activityData.estimatedCost,
+          duration: activityData.duration,
+          currency: activityData.currency || 'USD',
           sortOrder: i,
           cityId: city.id,
-          imageUrl: place.imageUrl,
+          imageUrl: activityData.imageUrl,
         });
 
         const saved = await this.cityActivityRepository.save(activity);
@@ -230,7 +230,7 @@ export class LocationsService {
     }
   }
 
-  // Force refresh activities from Geoapify
+  // Force refresh activities from Amadeus
   async refreshCityActivities(cityId: number): Promise<CityActivity[]> {
     const city = await this.cityRepository.findOne({
       where: { id: cityId },
