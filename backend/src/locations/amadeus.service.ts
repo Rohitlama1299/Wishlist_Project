@@ -25,6 +25,11 @@ interface AmadeusResponse {
   data: AmadeusActivity[];
 }
 
+interface AmadeusTokenResponse {
+  access_token: string;
+  expires_in: number;
+}
+
 export interface PlaceActivity {
   name: string;
   description: string;
@@ -51,8 +56,12 @@ export class AmadeusService {
     this.apiKey = this.configService.get<string>('AMADEUS_API_KEY') || '';
     this.apiSecret = this.configService.get<string>('AMADEUS_API_SECRET') || '';
 
-    this.logger.log(`Amadeus API Key loaded: ${this.apiKey ? 'YES (' + this.apiKey.substring(0, 5) + '...)' : 'NO'}`);
-    this.logger.log(`Amadeus API Secret loaded: ${this.apiSecret ? 'YES' : 'NO'}`);
+    this.logger.log(
+      `Amadeus API Key loaded: ${this.apiKey ? 'YES (' + this.apiKey.substring(0, 5) + '...)' : 'NO'}`,
+    );
+    this.logger.log(
+      `Amadeus API Secret loaded: ${this.apiSecret ? 'YES' : 'NO'}`,
+    );
 
     if (!this.apiKey || !this.apiSecret) {
       this.logger.warn('Amadeus API credentials not configured');
@@ -83,7 +92,7 @@ export class AmadeusService {
         return null;
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as AmadeusTokenResponse;
       this.accessToken = data.access_token;
       // Set expiry 5 minutes before actual expiry for safety
       this.tokenExpiry = Date.now() + (data.expires_in - 300) * 1000;
@@ -137,7 +146,7 @@ export class AmadeusService {
         return [];
       }
 
-      const data: AmadeusResponse = await response.json();
+      const data = (await response.json()) as AmadeusResponse;
 
       if (!data.data || data.data.length === 0) {
         this.logger.log(`No activities found for ${cityName}`);
@@ -214,8 +223,11 @@ export class AmadeusService {
 
   private determineCategory(activity: AmadeusActivity): string {
     const name = activity.name?.toLowerCase() || '';
-    const desc =
-      (activity.shortDescription || activity.description || '').toLowerCase();
+    const desc = (
+      activity.shortDescription ||
+      activity.description ||
+      ''
+    ).toLowerCase();
     const combined = `${name} ${desc}`;
 
     if (
@@ -329,8 +341,6 @@ export class AmadeusService {
         'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&q=80',
     };
 
-    return (
-      categoryImages[category] || categoryImages.sightseeing
-    );
+    return categoryImages[category] || categoryImages.sightseeing;
   }
 }
