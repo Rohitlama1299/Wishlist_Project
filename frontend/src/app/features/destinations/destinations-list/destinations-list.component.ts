@@ -73,7 +73,7 @@ interface FilterState {
 
       <div class="filters" [class.hidden]="viewMode() === 'countries'" @fadeInUp>
         <mat-form-field appearance="outline" class="search-field">
-          <mat-label>Search destinations</mat-label>
+          <mat-label>Search</mat-label>
           <input matInput [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" placeholder="Search...">
           <mat-icon matPrefix>search</mat-icon>
           @if (searchQuery) {
@@ -83,59 +83,42 @@ interface FilterState {
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="filter-field">
           <mat-label>Status</mat-label>
           <mat-select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
             <mat-option value="all">All</mat-option>
             <mat-option value="visited">Visited</mat-option>
-            <mat-option value="pending">On Wishlist</mat-option>
+            <mat-option value="pending">Wishlist</mat-option>
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="filter-field">
           <mat-label>Continent</mat-label>
           <mat-select [(ngModel)]="continentFilter" (ngModelChange)="applyFilters()">
-            <mat-option value="all">All Continents</mat-option>
+            <mat-option value="all">All</mat-option>
             @for (continent of getUniqueContinents(); track continent) {
               <mat-option [value]="continent">{{ continent }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="filter-field">
           <mat-label>Sort by</mat-label>
           <mat-select [(ngModel)]="sortBy" (ngModelChange)="applyFilters()">
-            <mat-option value="recent">Recently Added</mat-option>
-            <mat-option value="planned">Planned Date</mat-option>
+            <mat-option value="recent">Recent</mat-option>
+            <mat-option value="planned">Planned</mat-option>
             <mat-option value="priority">Priority</mat-option>
-            <mat-option value="name">City Name</mat-option>
+            <mat-option value="name">Name</mat-option>
             <mat-option value="country">Country</mat-option>
           </mat-select>
         </mat-form-field>
 
-        <!-- Additional Filters -->
-        <div class="filter-chips">
-          <button
-            class="filter-chip"
-            [class.active]="hasPhotosFilter === true"
-            (click)="togglePhotosFilter(true)">
-            <mat-icon>photo_camera</mat-icon>
-            Has Photos
+        @if (hasActiveFilters()) {
+          <button class="clear-btn" (click)="clearFilters()">
+            <mat-icon>filter_alt_off</mat-icon>
+            Clear
           </button>
-          <button
-            class="filter-chip"
-            [class.active]="hasPhotosFilter === false"
-            (click)="togglePhotosFilter(false)">
-            <mat-icon>photo_camera</mat-icon>
-            No Photos
-          </button>
-          @if (hasActiveFilters()) {
-            <button class="clear-btn" (click)="clearFilters()">
-              <mat-icon>filter_alt_off</mat-icon>
-              Clear All
-            </button>
-          }
-        </div>
+        }
       </div>
 
       @if (loading()) {
@@ -362,10 +345,9 @@ interface FilterState {
     /* Filters */
     .filters {
       display: flex;
-      gap: 16px;
+      gap: 12px;
       margin-bottom: 24px;
-      flex-wrap: wrap;
-      align-items: flex-start;
+      align-items: center;
     }
 
     .filters.hidden {
@@ -374,54 +356,24 @@ interface FilterState {
 
     .search-field {
       flex: 1;
-      min-width: 250px;
+      min-width: 180px;
+      max-width: 280px;
     }
 
-    .filter-chips {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      width: 100%;
-      align-items: center;
+    .filter-field {
+      width: 130px;
+      flex-shrink: 0;
     }
 
-    .filter-chip {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      border: 2px solid #e0e0e0;
-      background: white;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 500;
-      color: #666;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .filter-chip:hover {
-      border-color: #667eea;
-      color: #667eea;
-    }
-
-    .filter-chip.active {
-      background: #667eea;
-      border-color: #667eea;
-      color: white;
-    }
-
-    .filter-chip mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+    .filters ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+      display: none;
     }
 
     .clear-btn {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
+      gap: 4px;
+      padding: 8px 12px;
       background: transparent;
       border: none;
       color: #f44336;
@@ -429,6 +381,8 @@ interface FilterState {
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .clear-btn:hover {
@@ -855,7 +809,13 @@ interface FilterState {
       }
 
       .search-field {
-        min-width: 200px;
+        min-width: 180px;
+        max-width: none;
+        flex: 1 1 100%;
+      }
+
+      .filter-field {
+        width: 120px;
       }
     }
 
@@ -891,27 +851,24 @@ interface FilterState {
       }
 
       .filters {
-        flex-direction: column;
-        gap: 12px;
+        flex-wrap: wrap;
+        gap: 8px;
       }
 
       .search-field {
         min-width: 100%;
+        max-width: none;
+        flex: 1 1 100%;
       }
 
-      .filters mat-form-field {
-        width: 100%;
+      .filter-field {
+        width: calc(33.33% - 6px);
+        min-width: 100px;
       }
 
-      .filter-chips {
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        padding-bottom: 8px;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .filter-chip {
-        flex-shrink: 0;
+      .clear-btn {
+        padding: 6px 10px;
+        font-size: 12px;
       }
 
       .destinations-grid {
