@@ -88,7 +88,8 @@ export class AmadeusService {
       });
 
       if (!response.ok) {
-        this.logger.error(`Amadeus auth error: ${response.status}`);
+        const errorBody = await response.text();
+        this.logger.error(`Amadeus auth error: ${response.status} - ${errorBody}`);
         return null;
       }
 
