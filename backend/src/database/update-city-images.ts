@@ -1,5 +1,14 @@
 import { DataSource } from 'typeorm';
-import { City } from '../entities/city.entity';
+import {
+  City,
+  Country,
+  Continent,
+  Destination,
+  User,
+  Photo,
+  Activity,
+  CityActivity,
+} from '../entities';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: process.env.ENV_FILE || '.env' });
@@ -28,11 +37,13 @@ const cityUpdates: Record<string, string> = {
   Bruges: '_BBlUZhRzjg',
 };
 
+const entities = [User, Continent, Country, City, CityActivity, Destination, Photo, Activity];
+
 const dbConfig = process.env.DATABASE_URL
   ? {
       type: 'postgres' as const,
-      url: process.env.DATABASE_URL,
-      entities: [City],
+      url: process.env.DATABASE_URL.replace('sslmode=require', 'sslmode=no-verify'),
+      entities,
       ssl: { rejectUnauthorized: false },
     }
   : {
@@ -42,7 +53,7 @@ const dbConfig = process.env.DATABASE_URL
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'password',
       database: process.env.DB_NAME || 'travel_wishlist',
-      entities: [City],
+      entities,
     };
 
 const dataSource = new DataSource(dbConfig);
