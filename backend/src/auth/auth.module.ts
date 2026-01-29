@@ -14,12 +14,20 @@ import { User } from '../entities';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'default-secret',
-        signOptions: {
-          expiresIn: '7d',
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error(
+            'JWT_SECRET environment variable is required. Please set it in your .env file.',
+          );
+        }
+        return {
+          secret,
+          signOptions: {
+            expiresIn: '7d',
+          },
+        };
+      },
       inject: [ConfigService],
     }),
   ],

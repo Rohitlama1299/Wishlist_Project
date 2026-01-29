@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength, Matches } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -13,5 +13,10 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
+  @Matches(/^(\/uploads\/|https:\/\/)/, {
+    message:
+      'Profile picture must be a valid HTTPS URL or local upload path starting with /uploads/',
+  })
   profilePicture?: string;
 }

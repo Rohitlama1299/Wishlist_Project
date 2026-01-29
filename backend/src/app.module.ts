@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { join } from 'path';
 
 import { AppController } from './app.controller';
@@ -30,6 +32,13 @@ import {
       isGlobal: true,
       envFilePath: '.env',
     }),
+    // Rate limiting: 100 requests per 60 seconds per IP
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
@@ -53,6 +62,8 @@ import {
             ],
             synchronize: !isProduction,
             logging: !isProduction,
+            // Note: rejectUnauthorized:false is required for many cloud PostgreSQL providers
+            // (Supabase, Railway, etc.) that use self-signed certificates
             ssl: {
               rejectUnauthorized: false,
             },
@@ -99,6 +110,13 @@ import {
     ActivitiesModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Enable rate limiting globally
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
