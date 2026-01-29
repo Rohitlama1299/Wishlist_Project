@@ -104,8 +104,8 @@ const cityPhotos: Record<string, string> = {
   Kerala: '1602216056096-3b40cc0c9944',
   Udaipur: '1568495248636-6432b97bd949',
   Kolkata: '1558431382-27e303142255',
-  Kathmandu: '1605640840605-14ac1855c3ba',
-  Pokhara: '1544735716-ea9ef790f501',
+  Kathmandu: '59Al83Zjtf8',
+  Pokhara: '7cENZhgyf7c',
   Colombo: '1578662996442-48f60103fc96',
   Kandy: '1586500036206-0f4e31a3b24e',
   Galle: '1578662996442-48f60103fc96',
@@ -171,10 +171,10 @@ const cityPhotos: Record<string, string> = {
   Amsterdam: '1534351590666-13e3e96b5017',
   Rotterdam: '1558618666-fcd25c85cd64',
   'The Hague': '1558618666-fcd25c85cd64',
-  Brussels: '1559113202-c916b8e55d55',
-  Bruges: '1491557345352-5929e343eb89',
-  Antwerp: '1559113202-c916b8e55d55',
-  Ghent: '1559113202-c916b8e55d55',
+  Brussels: 'm39OKAexaqo',
+  Bruges: '_BBlUZhRzjg',
+  Antwerp: 'DlTwjSIup0A',
+  Ghent: 'k1E6994P3t8',
   'Luxembourg City': '1559113202-c916b8e55d55',
 
   // Europe - Southern
@@ -211,8 +211,8 @@ const cityPhotos: Record<string, string> = {
 
   // Europe - Central & Eastern
   Vienna: '1516550893923-42d28e5677af',
-  Salzburg: '1609952048180-7b6e7d63ce22',
-  Innsbruck: '1609952048180-7b6e7d63ce22',
+  Salzburg: 'Ig2cLTewvP4',
+  Innsbruck: '2V0EXtFqdJQ',
   Zurich: '1515488764276-beab7607c1e6',
   Geneva: '1515488764276-beab7607c1e6',
   Lucerne: '1527668752968-14dc70a27c95',
@@ -241,7 +241,8 @@ const cityPhotos: Record<string, string> = {
   Mostar: '1576867757603-05b134ebc379',
   Podgorica: '1576867757603-05b134ebc379',
   Kotor: '1555990538-18a23ab7e89c',
-  Tirana: '1576867757603-05b134ebc379',
+  Tirana: 'hYsQP88bMlo',
+  'Andorra la Vella': 'txDX4b4n8AY',
   Skopje: '1576867757603-05b134ebc379',
 
   // Europe - Nordic & Baltic
@@ -392,9 +393,15 @@ const cityPhotos: Record<string, string> = {
   Moorea: '1559128010-cd4eabd16038',
 };
 
-// Helper to generate Unsplash URL
-const unsplash = (photoId: string): string =>
-  `https://images.unsplash.com/photo-${photoId}?w=800&q=80`;
+// Helper to generate Unsplash URL (supports both full IDs and short slugs)
+const unsplash = (photoId: string): string => {
+  // Short slugs (like "59Al83Zjtf8") use source.unsplash.com
+  if (photoId.length < 20) {
+    return `https://source.unsplash.com/${photoId}/800x600`;
+  }
+  // Full IDs (like "1605640840605-14ac1855c3ba") use images.unsplash.com
+  return `https://images.unsplash.com/photo-${photoId}?w=800&q=80`;
+};
 
 // Fallback for cities without curated photos
 const fallbackImage =
