@@ -13,10 +13,10 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
-  @Matches(/^(\/uploads\/|https:\/\/)/, {
+  @MaxLength(200000)
+  @Matches(/^(\/uploads\/|https:\/\/|data:image\/)/, {
     message:
-      'Profile picture must be a valid HTTPS URL or local upload path starting with /uploads/',
+      'Profile picture must be a valid HTTPS URL, local upload path, or base64 data URL',
   })
   profilePicture?: string;
 }

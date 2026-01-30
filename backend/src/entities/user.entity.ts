@@ -25,7 +25,7 @@ export class User {
   @Column()
   lastName: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   profilePicture: string;
 
   @OneToMany(() => Destination, (destination) => destination.user)
