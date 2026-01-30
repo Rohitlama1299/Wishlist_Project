@@ -13,12 +13,24 @@ import * as dotenv from 'dotenv';
 
 dotenv.config({ path: process.env.ENV_FILE || '.env' });
 
-const entities = [User, Continent, Country, City, CityActivity, Destination, Photo, Activity];
+const entities = [
+  User,
+  Continent,
+  Country,
+  City,
+  CityActivity,
+  Destination,
+  Photo,
+  Activity,
+];
 
 const dbConfig = process.env.DATABASE_URL
   ? {
       type: 'postgres' as const,
-      url: process.env.DATABASE_URL.replace('sslmode=require', 'sslmode=no-verify'),
+      url: process.env.DATABASE_URL.replace(
+        'sslmode=require',
+        'sslmode=no-verify',
+      ),
       entities,
       ssl: { rejectUnauthorized: false },
     }
@@ -57,8 +69,7 @@ async function listDuplicates() {
     }
 
     console.log(`Total cities needing unique images: ${duplicates.length}\n`);
-    duplicates.sort().forEach(name => console.log(name));
-
+    duplicates.sort().forEach((name) => console.log(name));
   } catch (error) {
     console.error('Error:', error);
   } finally {
@@ -66,4 +77,4 @@ async function listDuplicates() {
   }
 }
 
-listDuplicates();
+listDuplicates().catch(console.error);

@@ -13,12 +13,24 @@ import * as dotenv from 'dotenv';
 
 dotenv.config({ path: process.env.ENV_FILE || '.env' });
 
-const entities = [User, Continent, Country, City, CityActivity, Destination, Photo, Activity];
+const entities = [
+  User,
+  Continent,
+  Country,
+  City,
+  CityActivity,
+  Destination,
+  Photo,
+  Activity,
+];
 
 const dbConfig = process.env.DATABASE_URL
   ? {
       type: 'postgres' as const,
-      url: process.env.DATABASE_URL.replace('sslmode=require', 'sslmode=no-verify'),
+      url: process.env.DATABASE_URL.replace(
+        'sslmode=require',
+        'sslmode=no-verify',
+      ),
       entities,
       ssl: { rejectUnauthorized: false },
     }
@@ -55,17 +67,18 @@ async function searchUnsplashAPI(query: string): Promise<string | null> {
       `https://unsplash.com/napi/search/photos?query=${searchTerm}&per_page=1`,
       {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-          'Accept': 'application/json',
-        }
-      }
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          Accept: 'application/json',
+        },
+      },
     );
 
     if (!response.ok) {
       return null;
     }
 
-    const data: UnsplashSearchResult = await response.json();
+    const data = (await response.json()) as UnsplashSearchResult;
     if (data.results && data.results.length > 0) {
       // Return the regular sized URL directly - it's already verified to exist
       const regularUrl = data.results[0].urls.regular;
@@ -151,7 +164,7 @@ async function fixDuplicates() {
       }
 
       // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
     }
 
     console.log(`\n============================`);
@@ -162,7 +175,6 @@ async function fixDuplicates() {
     if (failedCities.length > 0) {
       console.log(`\nFailed cities: ${failedCities.join(', ')}`);
     }
-
   } catch (error) {
     console.error('Error:', error);
     process.exit(1);
@@ -171,5 +183,4 @@ async function fixDuplicates() {
   }
 }
 
-fixDuplicates();
-2
+fixDuplicates().catch(console.error);
